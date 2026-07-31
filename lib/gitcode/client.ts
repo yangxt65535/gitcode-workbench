@@ -40,6 +40,18 @@ export async function fetchGitCode(
   return res;
 }
 
+export async function readGitCodeJson<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  if (!text.trim()) {
+    throw new GitCodeHttpError(502, "GitCode 返回空响应");
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new GitCodeHttpError(502, "GitCode 返回的数据不是合法 JSON");
+  }
+}
+
 export type GitCodeUser = {
   login: string;
   name?: string;
@@ -54,11 +66,11 @@ export async function fetchGitCodeUser(token: string): Promise<GitCodeUser> {
   if (!res.ok) {
     throw new GitCodeHttpError(res.status, "无法连接 GitCode，请稍后重试");
   }
-  const data = (await res.json()) as {
+  const data = await readGitCodeJson<{
     login?: string;
     name?: string;
     avatar_url?: string;
-  };
+  }>(res);
   if (!data.login) {
     throw new GitCodeHttpError(502, "GitCode 返回的用户信息无效");
   }

@@ -11,12 +11,16 @@ type RawMilestone =
   | undefined;
 
 export type GitCodeIssueRaw = {
-  number?: number;
+  /** GitCode docs/samples return string numbers, e.g. `"15"`. */
+  number?: number | string;
   title?: string;
+  body?: string | null;
+  /** Docs use `opened` / `closed`; normalize to open/closed. */
   state?: string;
+  issue_state?: string;
   labels?: RawLabel[];
   milestone?: RawMilestone;
-  issue_type?: string | { name?: string };
+  issue_type?: string | { name?: string } | null;
   type?: string;
   user?: RawUser;
   assignee?: RawUser;
@@ -73,11 +77,26 @@ function mapIssueType(raw: GitCodeIssueRaw): string {
 }
 
 function mapState(raw: string | undefined): IssueState {
-  return raw === "closed" ? "closed" : "open";
+  const s = (raw ?? "").trim().toLowerCase();
+  if (s === "closed" || s === "close") return "closed";
+  // GitCode list samples use `opened` for open issues.
+  return "open";
+}
+
+function mapNumber(raw: number | string | undefined): number | null {
+  if (typeof raw === "number" && Number.isFinite(raw) && raw >= 1) {
+    return Math.trunc(raw);
+  }
+  if (typeof raw === "string" && /^\d+$/.test(raw.trim())) {
+    const n = Number(raw.trim());
+    return n >= 1 ? n : null;
+  }
+  return null;
 }
 
 export function mapGitCodeIssue(raw: GitCodeIssueRaw): Issue | null {
-  if (typeof raw.number !== "number" || !Number.isFinite(raw.number)) {
+  const number = mapNumber(raw.number);
+  if (number == null) {
     return null;
   }
   const user = mapUser(raw.user) ?? { login: "unknown" };
@@ -93,9 +112,9 @@ export function mapGitCodeIssue(raw: GitCodeIssueRaw): Issue | null {
         : [];
 
   return {
-    number: raw.number,
-    title: raw.title?.trim() || `(#${raw.number})`,
-    state: mapState(raw.state),
+    number,
+    title: raw.title?.trim() || `(#${number})`,
+    state: mapState(raw.state ?? raw.issue_state),
     labels: mapLabels(raw.labels),
     milestone: mapMilestone(raw.milestone),
     issue_type: mapIssueType(raw),
@@ -104,5 +123,6 @@ export function mapGitCodeIssue(raw: GitCodeIssueRaw): Issue | null {
     created_at: raw.created_at || new Date(0).toISOString(),
     updated_at: raw.updated_at || raw.created_at || new Date(0).toISOString(),
     html_url: raw.html_url || raw.url || "",
+    body: typeof raw.body === "string" ? raw.body : "",
   };
 }

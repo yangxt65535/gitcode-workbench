@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useState, type KeyboardEvent } from "react";
+import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
+import { TextInput } from "@/components/ui/TextInput";
 import type { IssueMeta } from "@/lib/issues/types";
 import styles from "./IssueFilters.module.css";
 
@@ -10,7 +13,7 @@ export type IssueFiltersValue = {
   assignee: string[];
   label: string[];
   milestone: string[];
-  type: string[];
+  search: string;
   sort: "created" | "updated";
   direction: "asc" | "desc";
 };
@@ -21,8 +24,8 @@ export const DEFAULT_ISSUE_FILTERS: IssueFiltersValue = {
   assignee: [],
   label: [],
   milestone: [],
-  type: [],
-  sort: "updated",
+  search: "",
+  sort: "created",
   direction: "desc",
 };
 
@@ -39,14 +42,69 @@ export function IssueFilters({
   onChange,
   disabled,
 }: IssueFiltersProps) {
+  const [searchDraft, setSearchDraft] = useState(value.search);
+
+  useEffect(() => {
+    setSearchDraft(value.search);
+  }, [value.search]);
+
   function patch(partial: Partial<IssueFiltersValue>) {
     onChange({ ...value, ...partial });
   }
 
+  function applySearch() {
+    const next = searchDraft.trim();
+    if (next === value.search) return;
+    patch({ search: next });
+  }
+
+  function clearSearch() {
+    setSearchDraft("");
+    if (value.search) {
+      patch({ search: "" });
+    }
+  }
+
+  function onSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") applySearch();
+  }
+
   const empty: string[] = [];
+  const canClearSearch = Boolean(searchDraft.trim() || value.search);
 
   return (
     <div className={styles.root} aria-disabled={disabled || undefined}>
+      <div className={styles.searchRow}>
+        <label className={styles.searchField}>
+          <span className={styles.sortLabel}>名称搜索</span>
+          <div className={styles.searchControls}>
+            <div className={styles.searchInput}>
+              <TextInput
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+                onKeyDown={onSearchKeyDown}
+                placeholder="按标题关键字搜索"
+                disabled={disabled}
+                aria-label="名称搜索"
+              />
+            </div>
+            <Button
+              variant="secondary"
+              disabled={disabled || !canClearSearch}
+              onClick={clearSearch}
+            >
+              清空
+            </Button>
+            <Button
+              variant="primary"
+              disabled={disabled}
+              onClick={applySearch}
+            >
+              确认
+            </Button>
+          </div>
+        </label>
+      </div>
       <div className={styles.multiRow}>
         <MultiSelect
           label="状态"
@@ -83,13 +141,6 @@ export function IssueFilters({
           onChange={(milestone) => patch({ milestone })}
           disabled={disabled}
         />
-        <MultiSelect
-          label="类型"
-          options={meta?.types ?? empty}
-          value={value.type}
-          onChange={(type) => patch({ type })}
-          disabled={disabled}
-        />
       </div>
       <div className={styles.sortRow}>
         <label className={styles.sortField}>
@@ -102,8 +153,8 @@ export function IssueFilters({
               patch({ sort: e.target.value as "created" | "updated" })
             }
           >
-            <option value="updated">更新时间</option>
             <option value="created">创建时间</option>
+            <option value="updated">更新时间</option>
           </select>
         </label>
         <label className={styles.sortField}>

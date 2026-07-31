@@ -1,6 +1,6 @@
 # GitCode 工作台
 
-GitCode workbench SPA — Issue 看板与 GitCode 集成工作台。
+GitCode workbench SPA，用于高效执行本人在 GitCode 企业开源研发工作中的一些操作。
 
 ## 快速开始
 

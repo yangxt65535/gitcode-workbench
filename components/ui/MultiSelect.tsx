@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
 import styles from "./MultiSelect.module.css";
 
 type MultiSelectProps = {
@@ -11,6 +12,12 @@ type MultiSelectProps = {
   disabled?: boolean;
 };
 
+function sameSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  return b.every((item) => set.has(item));
+}
+
 export function MultiSelect({
   label,
   options,
@@ -19,6 +26,7 @@ export function MultiSelect({
   disabled,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<string[]>(value);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
@@ -47,13 +55,41 @@ export function MultiSelect({
     };
   }, [open]);
 
-  function toggleOption(option: string) {
+  function openPanel() {
     if (disabled) return;
-    if (value.includes(option)) {
-      onChange(value.filter((item) => item !== option));
+    setDraft([...value]);
+    setOpen(true);
+  }
+
+  function togglePanel() {
+    if (disabled) return;
+    if (open) {
+      setOpen(false);
       return;
     }
-    onChange([...value, option]);
+    openPanel();
+  }
+
+  function toggleOption(option: string) {
+    if (disabled) return;
+    setDraft((prev) =>
+      prev.includes(option)
+        ? prev.filter((item) => item !== option)
+        : [...prev, option],
+    );
+  }
+
+  function confirm() {
+    if (disabled) return;
+    if (!sameSet(draft, value)) {
+      onChange([...draft]);
+    }
+    setOpen(false);
+  }
+
+  function reset() {
+    if (disabled) return;
+    setDraft([]);
   }
 
   const summary =
@@ -73,7 +109,7 @@ export function MultiSelect({
         aria-expanded={open}
         aria-controls={listId}
         disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={togglePanel}
       >
         <span className={styles.triggerText}>{summary}</span>
         <span className={styles.chevron} aria-hidden>
@@ -81,25 +117,42 @@ export function MultiSelect({
         </span>
       </button>
       <div
-        id={listId}
-        role="listbox"
-        aria-multiselectable
         className={`${styles.panel} ${open ? styles.panelOpen : ""}`}
+        hidden={!open}
       >
-        {options.map((option) => {
-          const checked = value.includes(option);
-          return (
-            <label key={option} className={styles.option}>
-              <input
-                type="checkbox"
-                checked={checked}
-                disabled={disabled}
-                onChange={() => toggleOption(option)}
-              />
-              <span>{option}</span>
-            </label>
-          );
-        })}
+        <div
+          id={listId}
+          role="listbox"
+          aria-multiselectable
+          className={styles.options}
+        >
+          {options.length === 0 ? (
+            <div className={styles.emptyOptions}>暂无选项</div>
+          ) : (
+            options.map((option) => {
+              const checked = draft.includes(option);
+              return (
+                <label key={option} className={styles.option}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => toggleOption(option)}
+                  />
+                  <span>{option}</span>
+                </label>
+              );
+            })
+          )}
+        </div>
+        <div className={styles.footer}>
+          <Button variant="secondary" disabled={disabled} onClick={reset}>
+            重置
+          </Button>
+          <Button variant="primary" disabled={disabled} onClick={confirm}>
+            确认
+          </Button>
+        </div>
       </div>
     </div>
   );

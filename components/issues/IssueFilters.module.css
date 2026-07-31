@@ -13,6 +13,29 @@
   gap: 8px 12px;
 }
 
+.searchRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.searchField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.searchControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+}
+
 .sortRow {
   display: flex;
   flex-wrap: wrap;

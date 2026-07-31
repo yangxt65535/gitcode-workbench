@@ -52,22 +52,31 @@
   left: 0;
   right: 0;
   z-index: 20;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
+  display: none;
+  flex-direction: column;
+  max-height: 280px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: 0 4px 12px rgb(17 24 39 / 8%);
-  transition:
-    max-height 180ms var(--ease),
-    opacity 180ms var(--ease);
+  overflow: hidden;
 }
 
 .panelOpen {
-  max-height: 220px;
-  opacity: 1;
+  display: flex;
+}
+
+.options {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
+  max-height: 200px;
+}
+
+.emptyOptions {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .option {
@@ -85,4 +94,20 @@
 
 .option input {
   accent-color: var(--accent);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.footer :global(button) {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
 }

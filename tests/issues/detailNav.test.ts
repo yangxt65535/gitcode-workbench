@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildIssueUrl,
+  buildPullUrl,
   canNavigate,
   indexInResults,
   neighbor,
@@ -74,6 +75,22 @@ describe("buildIssueUrl", () => {
   it("builds gitcode issue url", () => {
     expect(buildIssueUrl("openFuyao", "dashboard", 42)).toBe(
       "https://gitcode.com/openFuyao/dashboard/issues/42",
+    );
+  });
+});
+
+describe("buildIssueUrl", () => {
+  it("builds issue URL", () => {
+    expect(buildIssueUrl("o", "r", 12)).toBe(
+      "https://gitcode.com/o/r/issues/12",
+    );
+  });
+});
+
+describe("buildPullUrl", () => {
+  it("builds pulls URL", () => {
+    expect(buildPullUrl("openFuyao", "e2e-auto-test", 412)).toBe(
+      "https://gitcode.com/openFuyao/e2e-auto-test/pulls/412",
     );
   });
 });

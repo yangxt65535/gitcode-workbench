@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const items = await getIssueRepository(token).list(query);
-    return NextResponse.json({ items });
+    const page = await getIssueRepository(token).list(query);
+    return NextResponse.json(page);
   } catch (err) {
     if (err instanceof GitCodeHttpError) {
       const status =

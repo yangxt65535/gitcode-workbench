@@ -33,6 +33,14 @@ export function buildIssueUrl(
   return `https://gitcode.com/${org}/${repo}/issues/${number}`;
 }
 
+export function buildPullUrl(
+  org: string,
+  repo: string,
+  number: number,
+): string {
+  return `https://gitcode.com/${org}/${repo}/pulls/${number}`;
+}
+
 export function parseJumpNumber(raw: string): number | null {
   const t = raw.trim();
   if (!/^\d+$/.test(t)) return null;

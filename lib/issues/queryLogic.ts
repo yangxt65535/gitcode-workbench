@@ -26,7 +26,8 @@ export function matchesQuery(issue: Issue, query: IssueQuery): boolean {
   ) {
     return false;
   }
-  if (activeFilter(query.type) && !query.type.includes(issue.issue_type)) {
+  const search = query.search?.trim().toLowerCase();
+  if (search && !issue.title.toLowerCase().includes(search)) {
     return false;
   }
   if (activeFilter(query.milestone)) {
@@ -42,10 +43,10 @@ export function matchesQuery(issue: Issue, query: IssueQuery): boolean {
 
 export function sortIssues(
   issues: Issue[],
-  sort: IssueQuery["sort"] = "updated",
+  sort: IssueQuery["sort"] = "created",
   direction: IssueQuery["direction"] = "desc",
 ): Issue[] {
-  const field = sort === "created" ? "created_at" : "updated_at";
+  const field = sort === "updated" ? "updated_at" : "created_at";
   const mul = direction === "asc" ? 1 : -1;
   return [...issues].sort((a, b) => {
     const diff = Date.parse(a[field]) - Date.parse(b[field]);
@@ -69,9 +70,6 @@ export function buildMetaFromIssues(issues: Issue[]) {
       issues
         .map((i) => i.milestone)
         .filter((m): m is string => m != null && m !== ""),
-    ),
-    types: uniqueSorted(
-      issues.map((i) => i.issue_type).filter((t) => t != null && t !== ""),
     ),
   };
 }

@@ -1,0 +1,147 @@
+.root {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.root :global(*:first-child) {
+  margin-top: 0;
+}
+
+.root :global(*:last-child) {
+  margin-bottom: 0;
+}
+
+.root :global(p),
+.root :global(ul),
+.root :global(ol),
+.root :global(blockquote),
+.root :global(pre),
+.root :global(table) {
+  margin: 0 0 0.75em;
+}
+
+.root :global(h1),
+.root :global(h2),
+.root :global(h3),
+.root :global(h4),
+.root :global(h5),
+.root :global(h6) {
+  margin: 1em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.root :global(h1) {
+  font-size: 1.35em;
+}
+
+.root :global(h2) {
+  font-size: 1.2em;
+}
+
+.root :global(h3) {
+  font-size: 1.1em;
+}
+
+.root :global(h4),
+.root :global(h5),
+.root :global(h6) {
+  font-size: 1em;
+}
+
+.root :global(a) {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.root :global(a:hover) {
+  text-decoration: underline;
+}
+
+.root :global(ul),
+.root :global(ol) {
+  padding-left: 1.4em;
+}
+
+.root :global(li + li) {
+  margin-top: 0.25em;
+}
+
+.root :global(blockquote) {
+  margin-left: 0;
+  padding: 0.25em 0.75em;
+  border-left: 3px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.root :global(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm, 3px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.root :global(pre) {
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.root :global(pre code) {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.root :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.root :global(th),
+.root :global(td) {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.root :global(th) {
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.root :global(hr) {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+
+.root :global(img) {
+  max-width: 100%;
+  height: auto;
+}
+
+.root :global(input[type="checkbox"]) {
+  margin-right: 0.4em;
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+}

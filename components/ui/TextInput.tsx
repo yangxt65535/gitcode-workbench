@@ -11,6 +11,7 @@ type TextInputProps = {
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   type?: "text" | "password";
   autoComplete?: string;
+  disabled?: boolean;
   "aria-label"?: string;
 };
 
@@ -22,6 +23,7 @@ export function TextInput({
   onKeyDown,
   type = "text",
   autoComplete,
+  disabled,
   "aria-label": ariaLabel,
 }: TextInputProps) {
   return (
@@ -34,6 +36,7 @@ export function TextInput({
       onBlur={onBlur}
       onKeyDown={onKeyDown}
       autoComplete={autoComplete}
+      disabled={disabled}
       aria-label={ariaLabel}
     />
   );

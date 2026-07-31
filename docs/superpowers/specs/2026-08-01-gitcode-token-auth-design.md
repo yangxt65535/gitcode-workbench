@@ -56,8 +56,13 @@
 ### 4.3 GitCodeIssueRepository（首版范围）
 
 - 实现 `IssueRepository`：`list` / `meta` 对齐现有 query 约定（多选逗号、sort/direction）。
-- 调用 GitCode Issues 相关 `/api/v5` 接口（具体 path 以实现时文档为准，如仓库 Issues 列表）；字段映射到现有 `Issue` / `IssueMeta` 形状。
-- 若 GitCode 某筛选项能力不足：在 BFF 侧对返回结果做二次过滤/排序（文档中注明降级），保证前端契约不变。
+- 调用 GitCode Issues：`GET https://api.gitcode.com/api/v5/repos/{owner}/{repo}/issues`（见 [Issues API](https://docs.gitcode.com/en/docs/repos/issues/)），使用 `page` / `per_page` **服务端分页**，避免一次拉全量。
+- **字段映射注意（以官方样例为准）**：
+  - `number` 可能为**字符串**（如 `"15"`），需解析为整数
+  - `state` 开放态可能为 `opened`（归一为 `open`），关闭为 `closed`
+- 列表响应附带 `total_count` / `total_page`（优先读 GitCode 响应头）。
+- `meta` 仅抽样少量页聚合筛选项，不阻塞列表分页。
+- 鉴权：`Authorization: Bearer`（与 [OpenAPI 鉴权](https://docs.gitcode.com/en/docs/apis/) 一致）。
 
 ## 5. UI 与交互
 

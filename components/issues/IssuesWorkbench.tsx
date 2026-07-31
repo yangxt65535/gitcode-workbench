@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
-import type { Issue, IssueMeta } from "@/lib/issues/types";
+import type { Issue, IssueListPage, IssueMeta } from "@/lib/issues/types";
 import {
   DEFAULT_ISSUE_FILTERS,
   IssueFilters,
@@ -16,6 +16,8 @@ import { IssueList } from "./IssueList";
 import { IssueDetailPanel } from "./IssueDetailPanel";
 import { RepoConfirmBar } from "./RepoConfirmBar";
 import styles from "./IssuesWorkbench.module.css";
+
+const DEFAULT_PER_PAGE = 20;
 
 function appendCsv(
   params: URLSearchParams,
@@ -29,19 +31,24 @@ function buildIssuesUrl(
   org: string,
   repo: string,
   filters: IssueFiltersValue,
+  page: number,
 ): string {
   const params = new URLSearchParams({
     org,
     repo,
     sort: filters.sort,
     direction: filters.direction,
+    page: String(page),
+    per_page: String(DEFAULT_PER_PAGE),
   });
   appendCsv(params, "state", filters.state);
   appendCsv(params, "creator", filters.creator);
   appendCsv(params, "assignee", filters.assignee);
   appendCsv(params, "label", filters.label);
   appendCsv(params, "milestone", filters.milestone);
-  appendCsv(params, "type", filters.type);
+  if (filters.search.trim()) {
+    params.set("search", filters.search.trim());
+  }
   return `/api/issues?${params.toString()}`;
 }
 
@@ -53,7 +60,10 @@ export function IssuesWorkbench() {
   const authed = Boolean(token);
 
   const [filters, setFilters] = useState<IssueFiltersValue>(DEFAULT_ISSUE_FILTERS);
+  const [page, setPage] = useState(1);
   const [items, setItems] = useState<Issue[]>([]);
+  const [totalPage, setTotalPage] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [meta, setMeta] = useState<IssueMeta | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,11 +75,19 @@ export function IssuesWorkbench() {
   if (boundWorkspace !== workspaceKey) {
     setBoundWorkspace(workspaceKey);
     setFilters(DEFAULT_ISSUE_FILTERS);
+    setPage(1);
     setSelectedNumber(null);
     setMeta(null);
     setItems([]);
+    setTotalPage(null);
+    setTotalCount(null);
     setError(null);
     metaWorkspaceRef.current = null;
+  }
+
+  function handleFiltersChange(next: IssueFiltersValue) {
+    setFilters(next);
+    setPage(1);
   }
 
   useEffect(() => {
@@ -79,6 +97,8 @@ export function IssuesWorkbench() {
       setLoading(false);
       setItems([]);
       setMeta(null);
+      setTotalPage(null);
+      setTotalCount(null);
       setError(null);
       metaWorkspaceRef.current = null;
       return;
@@ -88,6 +108,8 @@ export function IssuesWorkbench() {
       setLoading(false);
       setItems([]);
       setMeta(null);
+      setTotalPage(null);
+      setTotalCount(null);
       setError(null);
       metaWorkspaceRef.current = null;
       return;
@@ -111,7 +133,10 @@ export function IssuesWorkbench() {
               `/api/issues/meta?org=${encodeURIComponent(o)}&repo=${encodeURIComponent(r)}`,
               { signal: ac.signal, headers },
             ),
-            fetch(buildIssuesUrl(o, r, filters), { signal: ac.signal, headers }),
+            fetch(buildIssuesUrl(o, r, filters, page), {
+              signal: ac.signal,
+              headers,
+            }),
           ]);
           if (metaRes.status === 401 || listRes.status === 401) {
             clearSession();
@@ -125,12 +150,14 @@ export function IssuesWorkbench() {
             throw new Error(body?.message || `加载失败（${bad.status}）`);
           }
           const metaJson = (await metaRes.json()) as { meta: IssueMeta };
-          const listJson = (await listRes.json()) as { items: Issue[] };
+          const listJson = (await listRes.json()) as IssueListPage;
           metaWorkspaceRef.current = workspaceKey;
           setMeta(metaJson.meta);
           setItems(listJson.items ?? []);
+          setTotalPage(listJson.total_page);
+          setTotalCount(listJson.total_count);
         } else {
-          const res = await fetch(buildIssuesUrl(o, r, filters), {
+          const res = await fetch(buildIssuesUrl(o, r, filters, page), {
             signal: ac.signal,
             headers,
           });
@@ -144,13 +171,17 @@ export function IssuesWorkbench() {
             } | null;
             throw new Error(body?.message || `加载失败（${res.status}）`);
           }
-          const data = (await res.json()) as { items: Issue[] };
+          const data = (await res.json()) as IssueListPage;
           setItems(data.items ?? []);
+          setTotalPage(data.total_page);
+          setTotalCount(data.total_count);
         }
       } catch (err) {
         if (ac.signal.aborted) return;
         setError(err instanceof Error ? err.message : "加载失败");
         setItems([]);
+        setTotalPage(null);
+        setTotalCount(null);
       } finally {
         if (!ac.signal.aborted) setLoading(false);
       }
@@ -164,6 +195,7 @@ export function IssuesWorkbench() {
     ready,
     workspaceKey,
     filters,
+    page,
     retryToken,
     org,
     repo,
@@ -202,7 +234,7 @@ export function IssuesWorkbench() {
             <IssueFilters
               meta={meta}
               value={filters}
-              onChange={setFilters}
+              onChange={handleFiltersChange}
               disabled={loading}
             />
             {error ? (
@@ -226,6 +258,11 @@ export function IssuesWorkbench() {
               selectedNumber={selectedNumber}
               onSelect={setSelectedNumber}
               loading={loading && !error}
+              page={page}
+              perPage={DEFAULT_PER_PAGE}
+              totalPage={totalPage}
+              totalCount={totalCount}
+              onPageChange={setPage}
             />
           </>
         )}
