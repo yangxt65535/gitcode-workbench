@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { mapGitCodeIssue } from "@/lib/gitcode/mapIssue";
-import { extractBearer } from "@/lib/issues/authHeader";
-import { NextRequest } from "next/server";
 
 describe("mapGitCodeIssue", () => {
   it("maps a typical GitCode issue payload", () => {
@@ -54,19 +52,5 @@ describe("mapGitCodeIssue", () => {
 
   it("returns null without number", () => {
     expect(mapGitCodeIssue({ title: "x" })).toBeNull();
-  });
-});
-
-describe("extractBearer", () => {
-  it("parses Bearer token", () => {
-    const req = new NextRequest("http://localhost/api/issues", {
-      headers: { Authorization: "Bearer abc.def" },
-    });
-    expect(extractBearer(req)).toBe("abc.def");
-  });
-
-  it("returns null when missing", () => {
-    const req = new NextRequest("http://localhost/api/issues");
-    expect(extractBearer(req)).toBeNull();
   });
 });

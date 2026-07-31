@@ -13,6 +13,7 @@ export class GitCodeHttpError extends Error {
 export type GitCodeFetchOptions = {
   token: string;
   searchParams?: Record<string, string | undefined>;
+  signal?: AbortSignal;
 };
 
 export async function fetchGitCode(
@@ -36,6 +37,7 @@ export async function fetchGitCode(
       Authorization: `Bearer ${options.token}`,
     },
     cache: "no-store",
+    signal: options.signal,
   });
   return res;
 }

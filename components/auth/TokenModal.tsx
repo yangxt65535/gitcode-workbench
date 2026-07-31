@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { TextInput } from "@/components/ui/TextInput";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { fetchGitCodeUser, GitCodeHttpError } from "@/lib/gitcode/client";
 import styles from "./TokenModal.module.css";
 
 type TokenModalProps = {
@@ -29,23 +30,16 @@ export function TokenModal({ open, onClose }: TokenModalProps) {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: trimmed }),
-      });
-      const body = (await res.json().catch(() => null)) as {
-        username?: string;
-        message?: string;
-      } | null;
-      if (!res.ok || !body?.username) {
-        throw new Error(body?.message || "Token 无效或权限不足");
-      }
-      setSession({ token: trimmed, username: body.username });
+      const user = await fetchGitCodeUser(trimmed);
+      setSession({ token: trimmed, username: user.login });
       setToken("");
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "配置失败");
+      if (err instanceof GitCodeHttpError) {
+        setError(err.message);
+      } else {
+        setError(err instanceof Error ? err.message : "配置失败");
+      }
     } finally {
       setSubmitting(false);
     }

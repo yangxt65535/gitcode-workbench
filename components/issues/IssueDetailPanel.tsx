@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
 import { TextInput } from "@/components/ui/TextInput";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { GitCodeHttpError } from "@/lib/gitcode/client";
+import { fetchIssueDetail } from "@/lib/gitcode/fetchIssueDetail";
 import type { Issue, IssueComment, RelatedPull } from "@/lib/issues/types";
 import {
   buildIssueUrl,
@@ -77,39 +79,27 @@ export function IssueDetailPanel({
       setLoading(true);
       setError(null);
       try {
-        const params = new URLSearchParams({
+        const data = await fetchIssueDetail({
+          token: token!,
           org,
           repo,
-          number: String(selectedNumber),
-        });
-        const res = await fetch(`/api/issues/detail?${params}`, {
+          number: selectedNumber!,
           signal: ac.signal,
-          headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.status === 401) {
-          clearSession();
-          throw new Error("Token 无效，请重新配置");
-        }
-        if (!res.ok) {
-          const body = (await res.json().catch(() => null)) as {
-            message?: string;
-          } | null;
-          throw new Error(body?.message || `加载详情失败（${res.status}）`);
-        }
-        const data = (await res.json()) as {
-          issue: Issue;
-          comments?: IssueComment[];
-          related_pulls?: RelatedPull[];
-        };
         setDetail(data.issue);
-        setComments(data.comments ?? []);
-        setRelatedPulls(data.related_pulls ?? []);
+        setComments(data.comments);
+        setRelatedPulls(data.related_pulls);
       } catch (err) {
         if (ac.signal.aborted) return;
+        if (err instanceof GitCodeHttpError && err.status === 401) {
+          clearSession();
+          setError("Token 无效，请重新配置");
+        } else {
+          setError(err instanceof Error ? err.message : "加载详情失败");
+        }
         setDetail(null);
         setComments([]);
         setRelatedPulls([]);
-        setError(err instanceof Error ? err.message : "加载详情失败");
       } finally {
         if (!ac.signal.aborted) setLoading(false);
       }

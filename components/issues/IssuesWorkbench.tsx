@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { GitCodeHttpError } from "@/lib/gitcode/client";
+import { GitCodeIssueRepository } from "@/lib/issues/gitcodeIssueRepository";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
-import type { Issue, IssueListPage, IssueMeta } from "@/lib/issues/types";
+import type { Issue, IssueMeta } from "@/lib/issues/types";
 import {
   DEFAULT_ISSUE_FILTERS,
   IssueFilters,
@@ -18,39 +20,6 @@ import { RepoConfirmBar } from "./RepoConfirmBar";
 import styles from "./IssuesWorkbench.module.css";
 
 const DEFAULT_PER_PAGE = 20;
-
-function appendCsv(
-  params: URLSearchParams,
-  key: string,
-  values: string[],
-): void {
-  if (values.length > 0) params.set(key, values.join(","));
-}
-
-function buildIssuesUrl(
-  org: string,
-  repo: string,
-  filters: IssueFiltersValue,
-  page: number,
-): string {
-  const params = new URLSearchParams({
-    org,
-    repo,
-    sort: filters.sort,
-    direction: filters.direction,
-    page: String(page),
-    per_page: String(DEFAULT_PER_PAGE),
-  });
-  appendCsv(params, "state", filters.state);
-  appendCsv(params, "creator", filters.creator);
-  appendCsv(params, "assignee", filters.assignee);
-  appendCsv(params, "label", filters.label);
-  appendCsv(params, "milestone", filters.milestone);
-  if (filters.search.trim()) {
-    params.set("search", filters.search.trim());
-  }
-  return `/api/issues?${params.toString()}`;
-}
 
 export function IssuesWorkbench() {
   const { org, repo } = useWorkspace();
@@ -93,7 +62,7 @@ export function IssuesWorkbench() {
   useEffect(() => {
     if (!authReady) return;
 
-    if (!authed) {
+    if (!authed || !token) {
       setLoading(false);
       setItems([]);
       setMeta(null);
@@ -119,66 +88,53 @@ export function IssuesWorkbench() {
     const o = org.trim();
     const r = repo.trim();
     const needMeta = metaWorkspaceRef.current !== workspaceKey;
-    const headers: HeadersInit = {
-      Authorization: `Bearer ${token}`,
-    };
+    const repository = new GitCodeIssueRepository(token);
 
     async function run() {
       setLoading(true);
       setError(null);
       try {
+        const listQuery = {
+          org: o,
+          repo: r,
+          state: filters.state,
+          creator: filters.creator,
+          assignee: filters.assignee,
+          label: filters.label,
+          milestone: filters.milestone,
+          search: filters.search.trim() || undefined,
+          sort: filters.sort,
+          direction: filters.direction,
+          page,
+          per_page: DEFAULT_PER_PAGE,
+        };
+
         if (needMeta) {
-          const [metaRes, listRes] = await Promise.all([
-            fetch(
-              `/api/issues/meta?org=${encodeURIComponent(o)}&repo=${encodeURIComponent(r)}`,
-              { signal: ac.signal, headers },
-            ),
-            fetch(buildIssuesUrl(o, r, filters, page), {
-              signal: ac.signal,
-              headers,
-            }),
+          const [metaJson, listJson] = await Promise.all([
+            repository.meta(o, r),
+            repository.list(listQuery),
           ]);
-          if (metaRes.status === 401 || listRes.status === 401) {
-            clearSession();
-            throw new Error("Token 无效，请重新配置");
-          }
-          if (!metaRes.ok || !listRes.ok) {
-            const bad = !metaRes.ok ? metaRes : listRes;
-            const body = (await bad.json().catch(() => null)) as {
-              message?: string;
-            } | null;
-            throw new Error(body?.message || `加载失败（${bad.status}）`);
-          }
-          const metaJson = (await metaRes.json()) as { meta: IssueMeta };
-          const listJson = (await listRes.json()) as IssueListPage;
+          if (ac.signal.aborted) return;
           metaWorkspaceRef.current = workspaceKey;
-          setMeta(metaJson.meta);
+          setMeta(metaJson);
           setItems(listJson.items ?? []);
           setTotalPage(listJson.total_page);
           setTotalCount(listJson.total_count);
         } else {
-          const res = await fetch(buildIssuesUrl(o, r, filters, page), {
-            signal: ac.signal,
-            headers,
-          });
-          if (res.status === 401) {
-            clearSession();
-            throw new Error("Token 无效，请重新配置");
-          }
-          if (!res.ok) {
-            const body = (await res.json().catch(() => null)) as {
-              message?: string;
-            } | null;
-            throw new Error(body?.message || `加载失败（${res.status}）`);
-          }
-          const data = (await res.json()) as IssueListPage;
-          setItems(data.items ?? []);
-          setTotalPage(data.total_page);
-          setTotalCount(data.total_count);
+          const listJson = await repository.list(listQuery);
+          if (ac.signal.aborted) return;
+          setItems(listJson.items ?? []);
+          setTotalPage(listJson.total_page);
+          setTotalCount(listJson.total_count);
         }
       } catch (err) {
         if (ac.signal.aborted) return;
-        setError(err instanceof Error ? err.message : "加载失败");
+        if (err instanceof GitCodeHttpError && err.status === 401) {
+          clearSession();
+          setError("Token 无效，请重新配置");
+        } else {
+          setError(err instanceof Error ? err.message : "加载失败");
+        }
         setItems([]);
         setTotalPage(null);
         setTotalCount(null);
