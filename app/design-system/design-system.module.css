@@ -1,0 +1,102 @@
+.page {
+  height: 100%;
+  overflow: auto;
+  padding: 24px;
+}
+
+.title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 0 0 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.section {
+  margin-bottom: 28px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.swatch {
+  width: 120px;
+}
+
+.swatchColor {
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.swatchName {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.rowGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.listDemo {
+  max-width: 420px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.split {
+  display: flex;
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.splitLeft {
+  width: 36%;
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.splitRight {
+  width: 64%;
+  padding: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}

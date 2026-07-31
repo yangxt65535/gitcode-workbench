@@ -1,0 +1,26 @@
+.nav {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  height: 100%;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--duration) var(--ease), color var(--duration) var(--ease);
+  font-size: 14px;
+}
+
+.link:hover {
+  color: var(--text);
+}
+
+.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
