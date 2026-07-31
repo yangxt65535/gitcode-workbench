@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
-import styles from "./RepoInputs.module.css";
+import styles from "./RepoConfirmBar.module.css";
 
-export function RepoInputs() {
+export function RepoConfirmBar({ disabled = false }: { disabled?: boolean }) {
   const { org, repo, commitRepo } = useWorkspace();
   const [draftOrg, setDraftOrg] = useState(org);
   const [draftRepo, setDraftRepo] = useState(repo);
@@ -15,42 +16,50 @@ export function RepoInputs() {
     setDraftRepo(repo);
   }, [org, repo]);
 
-  function commitDraft() {
+  function confirm() {
     commitRepo({ org: draftOrg, repo: draftRepo });
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter") {
-      event.currentTarget.blur();
+      event.preventDefault();
+      confirm();
     }
   }
 
+  const canConfirm =
+    !disabled && Boolean(draftOrg.trim() && draftRepo.trim());
+
   return (
-    <div className={styles.inputs}>
-      <div className={styles.field}>
+    <div className={styles.bar}>
+      <div className={styles.fields}>
         <TextInput
           value={draftOrg}
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             setDraftOrg(e.target.value)
           }
-          onBlur={commitDraft}
           onKeyDown={handleKeyDown}
-          placeholder="org"
+          placeholder="组织"
           aria-label="组织"
         />
-      </div>
-      <div className={styles.field}>
         <TextInput
           value={draftRepo}
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             setDraftRepo(e.target.value)
           }
-          onBlur={commitDraft}
           onKeyDown={handleKeyDown}
-          placeholder="repo"
+          placeholder="仓库"
           aria-label="仓库"
         />
       </div>
+      <Button
+        type="button"
+        variant="primary"
+        disabled={!canConfirm}
+        onClick={confirm}
+      >
+        确认
+      </Button>
     </div>
   );
 }

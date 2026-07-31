@@ -9,6 +9,8 @@ type TextInputProps = {
   placeholder?: string;
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  type?: "text" | "password";
+  autoComplete?: string;
   "aria-label"?: string;
 };
 
@@ -18,17 +20,20 @@ export function TextInput({
   placeholder,
   onBlur,
   onKeyDown,
+  type = "text",
+  autoComplete,
   "aria-label": ariaLabel,
 }: TextInputProps) {
   return (
     <input
-      type="text"
+      type={type}
       className={styles.input}
       value={value}
       onChange={onChange}
       placeholder={placeholder}
       onBlur={onBlur}
       onKeyDown={onKeyDown}
+      autoComplete={autoComplete}
       aria-label={ariaLabel}
     />
   );

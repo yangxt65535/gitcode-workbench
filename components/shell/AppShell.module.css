@@ -25,20 +25,20 @@
   flex-shrink: 0;
 }
 
-.center {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-  justify-content: center;
-}
-
 .navWrap {
   display: flex;
   align-items: stretch;
   height: 100%;
-  margin-left: auto;
+  margin-left: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.authWrap {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .main {

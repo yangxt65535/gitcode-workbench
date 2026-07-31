@@ -1,6 +1,6 @@
-import { MockIssueRepository } from "./mockIssueRepository";
+import { GitCodeIssueRepository } from "./gitcodeIssueRepository";
 import type { IssueRepository } from "./types";
 
-export function getIssueRepository(): IssueRepository {
-  return new MockIssueRepository();
+export function getIssueRepository(token: string): IssueRepository {
+  return new GitCodeIssueRepository(token);
 }

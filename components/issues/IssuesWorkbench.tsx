@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import type { Issue, IssueMeta } from "@/lib/issues/types";
 import {
@@ -13,6 +14,7 @@ import {
 } from "./IssueFilters";
 import { IssueList } from "./IssueList";
 import { IssueDetailPanel } from "./IssueDetailPanel";
+import { RepoConfirmBar } from "./RepoConfirmBar";
 import styles from "./IssuesWorkbench.module.css";
 
 function appendCsv(
@@ -45,8 +47,10 @@ function buildIssuesUrl(
 
 export function IssuesWorkbench() {
   const { org, repo } = useWorkspace();
+  const { token, ready: authReady, clearSession } = useAuth();
   const workspaceKey = `${org.trim()}\0${repo.trim()}`;
   const ready = Boolean(org.trim() && repo.trim());
+  const authed = Boolean(token);
 
   const [filters, setFilters] = useState<IssueFiltersValue>(DEFAULT_ISSUE_FILTERS);
   const [items, setItems] = useState<Issue[]>([]);
@@ -58,7 +62,6 @@ export function IssuesWorkbench() {
   const [retryToken, setRetryToken] = useState(0);
   const metaWorkspaceRef = useRef<string | null>(null);
 
-  // Sync reset when org/repo changes (React "adjust state during render" pattern)
   if (boundWorkspace !== workspaceKey) {
     setBoundWorkspace(workspaceKey);
     setFilters(DEFAULT_ISSUE_FILTERS);
@@ -70,6 +73,17 @@ export function IssuesWorkbench() {
   }
 
   useEffect(() => {
+    if (!authReady) return;
+
+    if (!authed) {
+      setLoading(false);
+      setItems([]);
+      setMeta(null);
+      setError(null);
+      metaWorkspaceRef.current = null;
+      return;
+    }
+
     if (!ready) {
       setLoading(false);
       setItems([]);
@@ -83,6 +97,9 @@ export function IssuesWorkbench() {
     const o = org.trim();
     const r = repo.trim();
     const needMeta = metaWorkspaceRef.current !== workspaceKey;
+    const headers: HeadersInit = {
+      Authorization: `Bearer ${token}`,
+    };
 
     async function run() {
       setLoading(true);
@@ -92,10 +109,14 @@ export function IssuesWorkbench() {
           const [metaRes, listRes] = await Promise.all([
             fetch(
               `/api/issues/meta?org=${encodeURIComponent(o)}&repo=${encodeURIComponent(r)}`,
-              { signal: ac.signal },
+              { signal: ac.signal, headers },
             ),
-            fetch(buildIssuesUrl(o, r, filters), { signal: ac.signal }),
+            fetch(buildIssuesUrl(o, r, filters), { signal: ac.signal, headers }),
           ]);
+          if (metaRes.status === 401 || listRes.status === 401) {
+            clearSession();
+            throw new Error("Token 无效，请重新配置");
+          }
           if (!metaRes.ok || !listRes.ok) {
             const bad = !metaRes.ok ? metaRes : listRes;
             const body = (await bad.json().catch(() => null)) as {
@@ -111,7 +132,12 @@ export function IssuesWorkbench() {
         } else {
           const res = await fetch(buildIssuesUrl(o, r, filters), {
             signal: ac.signal,
+            headers,
           });
+          if (res.status === 401) {
+            clearSession();
+            throw new Error("Token 无效，请重新配置");
+          }
           if (!res.ok) {
             const body = (await res.json().catch(() => null)) as {
               message?: string;
@@ -132,14 +158,33 @@ export function IssuesWorkbench() {
 
     void run();
     return () => ac.abort();
-  }, [ready, workspaceKey, filters, retryToken, org, repo]);
+  }, [
+    authReady,
+    authed,
+    ready,
+    workspaceKey,
+    filters,
+    retryToken,
+    org,
+    repo,
+    token,
+    clearSession,
+  ]);
 
   const numbers = useMemo(() => items.map((i) => i.number), [items]);
 
-  if (!ready) {
+  if (!authReady) {
     return (
       <div className={styles.emptyPage}>
-        <EmptyState>请先填写组织和仓库</EmptyState>
+        <EmptyState>加载中…</EmptyState>
+      </div>
+    );
+  }
+
+  if (!authed) {
+    return (
+      <div className={styles.emptyPage}>
+        <EmptyState>请先配置 GitCode Token</EmptyState>
       </div>
     );
   }
@@ -147,40 +192,49 @@ export function IssuesWorkbench() {
   return (
     <div className={styles.root}>
       <div className={styles.left}>
-        <IssueFilters
-          meta={meta}
-          value={filters}
-          onChange={setFilters}
-          disabled={loading}
-        />
-        {error ? (
-          <ErrorBanner
-            message={error}
-            action={
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  metaWorkspaceRef.current = null;
-                  setRetryToken((t) => t + 1);
-                }}
-              >
-                重试
-              </Button>
-            }
-          />
-        ) : null}
-        <IssueList
-          items={items}
-          selectedNumber={selectedNumber}
-          onSelect={setSelectedNumber}
-          loading={loading && !error}
-        />
+        <RepoConfirmBar disabled={loading} />
+        {!ready ? (
+          <div className={styles.leftEmpty}>
+            <EmptyState>请填写组织和仓库并确认</EmptyState>
+          </div>
+        ) : (
+          <>
+            <IssueFilters
+              meta={meta}
+              value={filters}
+              onChange={setFilters}
+              disabled={loading}
+            />
+            {error ? (
+              <ErrorBanner
+                message={error}
+                action={
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      metaWorkspaceRef.current = null;
+                      setRetryToken((t) => t + 1);
+                    }}
+                  >
+                    重试
+                  </Button>
+                }
+              />
+            ) : null}
+            <IssueList
+              items={items}
+              selectedNumber={selectedNumber}
+              onSelect={setSelectedNumber}
+              loading={loading && !error}
+            />
+          </>
+        )}
       </div>
       <div className={styles.right}>
         <IssueDetailPanel
           org={org.trim()}
           repo={repo.trim()}
-          numbers={loading ? [] : numbers}
+          numbers={loading || !ready ? [] : numbers}
           selectedNumber={selectedNumber}
           onSelect={setSelectedNumber}
         />
