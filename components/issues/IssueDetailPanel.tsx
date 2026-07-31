@@ -51,7 +51,9 @@ export function IssueDetailPanel({
   onSelect,
 }: IssueDetailPanelProps) {
   const { token, clearSession } = useAuth();
-  const [jumpRaw, setJumpRaw] = useState("");
+  const [jumpRaw, setJumpRaw] = useState(
+    selectedNumber != null ? String(selectedNumber) : "",
+  );
   const [detail, setDetail] = useState<Issue | null>(null);
   const [comments, setComments] = useState<IssueComment[]>([]);
   const [relatedPulls, setRelatedPulls] = useState<RelatedPull[]>([]);
@@ -63,6 +65,10 @@ export function IssueDetailPanel({
     selectedNumber != null && org && repo
       ? buildIssueUrl(org, repo, selectedNumber)
       : null;
+
+  useEffect(() => {
+    setJumpRaw(selectedNumber != null ? String(selectedNumber) : "");
+  }, [selectedNumber]);
 
   useEffect(() => {
     if (selectedNumber == null || !org || !repo || !token) {

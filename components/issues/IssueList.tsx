@@ -60,6 +60,13 @@ export function IssueList({
     if (e.key === "Enter") jumpToPage();
   }
 
+  const summary =
+    knownTotalPage != null
+      ? `第 ${page} / ${knownTotalPage} 页${
+          totalCount != null ? ` · 共 ${totalCount}` : ""
+        }`
+      : `第 ${page} 页${totalCount != null ? ` · 共 ${totalCount}` : ""}`;
+
   return (
     <div className={styles.wrap}>
       {loading ? (
@@ -84,46 +91,46 @@ export function IssueList({
       )}
 
       <div className={styles.pager}>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={loading || !canPrev}
-          onClick={() => onPageChange(page - 1)}
-        >
-          上一页
-        </Button>
-        <div className={styles.pagerMid}>
-          <span className={styles.pagerInfo}>第</span>
-          <div className={styles.pageInput}>
-            <TextInput
-              value={pageDraft}
-              onChange={(e) => setPageDraft(e.target.value)}
-              onKeyDown={onPageKeyDown}
-              disabled={loading}
-              aria-label="跳转到页码"
-            />
-          </div>
-          <span className={styles.pagerInfo}>
-            {knownTotalPage != null ? `/ ${knownTotalPage} ` : ""}页
-            {totalCount != null ? ` · 共 ${totalCount}` : ""}
-          </span>
+        <div className={styles.pagerSummary}>{summary}</div>
+        <div className={styles.pagerControls}>
           <Button
             type="button"
-            variant="primary"
-            disabled={loading}
-            onClick={jumpToPage}
+            variant="secondary"
+            disabled={loading || !canPrev}
+            onClick={() => onPageChange(page - 1)}
           >
-            Go
+            上一页
+          </Button>
+          <div className={styles.pagerJump}>
+            <span className={styles.pagerInfo}>跳至</span>
+            <div className={styles.pageInput}>
+              <TextInput
+                value={pageDraft}
+                onChange={(e) => setPageDraft(e.target.value)}
+                onKeyDown={onPageKeyDown}
+                disabled={loading}
+                aria-label="跳转到页码"
+              />
+            </div>
+            <span className={styles.pagerInfo}>页</span>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={loading}
+              onClick={jumpToPage}
+            >
+              Go
+            </Button>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={loading || !canNext}
+            onClick={() => onPageChange(page + 1)}
+          >
+            下一页
           </Button>
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={loading || !canNext}
-          onClick={() => onPageChange(page + 1)}
-        >
-          下一页
-        </Button>
       </div>
     </div>
   );
