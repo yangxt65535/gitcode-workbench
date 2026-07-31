@@ -14,9 +14,7 @@ import { readWorkspace, writeWorkspace } from "./storage";
 type WorkspaceContextValue = {
   org: string;
   repo: string;
-  setOrg: (org: string) => void;
-  setRepo: (repo: string) => void;
-  commitRepo: () => void;
+  commitRepo: (next: { org: string; repo: string }) => void;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -31,24 +29,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setRepoState(stored.repo);
   }, []);
 
-  const setOrg = useCallback((next: string) => {
-    setOrgState(next);
+  const commitRepo = useCallback((next: { org: string; repo: string }) => {
+    const trimmed = { org: next.org.trim(), repo: next.repo.trim() };
+    writeWorkspace(trimmed);
+    setOrgState(trimmed.org);
+    setRepoState(trimmed.repo);
   }, []);
-
-  const setRepo = useCallback((next: string) => {
-    setRepoState(next);
-  }, []);
-
-  const commitRepo = useCallback(() => {
-    const next = { org: org.trim(), repo: repo.trim() };
-    writeWorkspace(next);
-    setOrgState(next.org);
-    setRepoState(next.repo);
-  }, [org, repo]);
 
   const value = useMemo(
-    () => ({ org, repo, setOrg, setRepo, commitRepo }),
-    [org, repo, setOrg, setRepo, commitRepo],
+    () => ({ org, repo, commitRepo }),
+    [org, repo, commitRepo],
   );
 
   return (

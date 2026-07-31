@@ -1,0 +1,19 @@
+.root {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.emptyHint {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.skeleton {
+  height: 56px;
+  margin: 8px 12px;
+  border-radius: var(--radius-md);
+  background: #eef0f3;
+}

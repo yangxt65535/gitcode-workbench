@@ -1,17 +1,27 @@
 "use client";
 
-import type { ChangeEvent, KeyboardEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { TextInput } from "@/components/ui/TextInput";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import styles from "./RepoInputs.module.css";
 
 export function RepoInputs() {
-  const { org, repo, setOrg, setRepo, commitRepo } = useWorkspace();
+  const { org, repo, commitRepo } = useWorkspace();
+  const [draftOrg, setDraftOrg] = useState(org);
+  const [draftRepo, setDraftRepo] = useState(repo);
+
+  useEffect(() => {
+    setDraftOrg(org);
+    setDraftRepo(repo);
+  }, [org, repo]);
+
+  function commitDraft() {
+    commitRepo({ org: draftOrg, repo: draftRepo });
+  }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter") {
       event.currentTarget.blur();
-      commitRepo();
     }
   }
 
@@ -19,9 +29,11 @@ export function RepoInputs() {
     <div className={styles.inputs}>
       <div className={styles.field}>
         <TextInput
-          value={org}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setOrg(e.target.value)}
-          onBlur={() => commitRepo()}
+          value={draftOrg}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setDraftOrg(e.target.value)
+          }
+          onBlur={commitDraft}
           onKeyDown={handleKeyDown}
           placeholder="org"
           aria-label="组织"
@@ -29,9 +41,11 @@ export function RepoInputs() {
       </div>
       <div className={styles.field}>
         <TextInput
-          value={repo}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setRepo(e.target.value)}
-          onBlur={() => commitRepo()}
+          value={draftRepo}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            setDraftRepo(e.target.value)
+          }
+          onBlur={commitDraft}
           onKeyDown={handleKeyDown}
           placeholder="repo"
           aria-label="仓库"

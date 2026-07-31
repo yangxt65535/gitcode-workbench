@@ -8,6 +8,7 @@ type MultiSelectProps = {
   options: string[];
   value: string[];
   onChange: (v: string[]) => void;
+  disabled?: boolean;
 };
 
 export function MultiSelect({
@@ -15,10 +16,15 @@ export function MultiSelect({
   options,
   value,
   onChange,
+  disabled,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
 
   useEffect(() => {
     if (!open) return;
@@ -42,6 +48,7 @@ export function MultiSelect({
   }, [open]);
 
   function toggleOption(option: string) {
+    if (disabled) return;
     if (value.includes(option)) {
       onChange(value.filter((item) => item !== option));
       return;
@@ -65,6 +72,7 @@ export function MultiSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
+        disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
       >
         <span className={styles.triggerText}>{summary}</span>
@@ -85,6 +93,7 @@ export function MultiSelect({
               <input
                 type="checkbox"
                 checked={checked}
+                disabled={disabled}
                 onChange={() => toggleOption(option)}
               />
               <span>{option}</span>

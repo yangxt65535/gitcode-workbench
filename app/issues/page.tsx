@@ -1,5 +1,12 @@
-import { EmptyState } from "@/components/ui/EmptyState";
+"use client";
+
+import { IssuesWorkbench } from "@/components/issues/IssuesWorkbench";
+import styles from "./page.module.css";
 
 export default function IssuesPage() {
-  return <EmptyState>模块开发中</EmptyState>;
+  return (
+    <div className={styles.page}>
+      <IssuesWorkbench />
+    </div>
+  );
 }
