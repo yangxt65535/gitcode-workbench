@@ -115,6 +115,7 @@ npm test -- --run tests/issues/…  # 单文件
 |------|------|
 | `docs/superpowers/specs/2026-08-01-gitcode-workbench-design.md` | 整体工作台 |
 | `docs/superpowers/specs/2026-08-02-gitcode-pulls-workbench-design.md` | PR 模块 |
+| `docs/superpowers/specs/2026-08-02-gitcode-repos-workbench-design.md` | Repos 模块（Fork 对比、commit 分页与缓存） |
 | `docs/superpowers/plans/` | 实现计划 |
 
 实现新功能前先读相关 spec；**spec 与代码冲突时以代码为准**，但应更新 spec 或在本文件注明偏差。

@@ -97,3 +97,5 @@ npx serve out
 ## 贡献与 AI 协作
 
 代码结构、模块约定与 Agent 开发须知见 [AGENTS.md](./AGENTS.md)。
+
+模块设计规格见 `docs/superpowers/specs/`（Issues 总览、 [PR](docs/superpowers/specs/2026-08-02-gitcode-pulls-workbench-design.md)、 [Repos](docs/superpowers/specs/2026-08-02-gitcode-repos-workbench-design.md)）。
