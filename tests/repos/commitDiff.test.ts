@@ -4,6 +4,7 @@ import {
   classifyUpstreamCommits,
   computeFullDiffStats,
   indexOfSha,
+  isDiffStatsReady,
   pageForCommitIndex,
   shaSet,
   sliceCommitPage,
@@ -54,5 +55,17 @@ describe("commitDiff", () => {
     expect(pageForCommitIndex(indexOfSha(list, "c"), 2)).toBe(2);
     expect(sliceCommitPage(list, 2, 2).map((c) => c.sha)).toEqual(["c", "d"]);
     expect(totalPages(4, 2)).toBe(2);
+  });
+
+  it("knows when diff stats are ready", () => {
+    const upstream = [commit("u1"), commit("shared")];
+    const fork = [commit("f1"), commit("shared")];
+    expect(isDiffStatsReady(upstream, fork, false, false)).toBe(true);
+    expect(
+      isDiffStatsReady([commit("u1")], [commit("f1")], false, false),
+    ).toBe(false);
+    expect(
+      isDiffStatsReady([commit("u1")], [commit("f1")], true, true),
+    ).toBe(true);
   });
 });

@@ -8,16 +8,22 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { GitCodeHttpError } from "@/lib/gitcode/client";
 import {
-  fetchAllCommits,
   fetchBranches,
   fetchRepoDetail,
   resolveForkRepo,
 } from "@/lib/gitcode/fetchRepoData";
 import {
+  clearCommitCache,
+  fetchAllCommitsCached,
+  getCommitCache,
+  commitCacheKey,
+} from "@/lib/repos/commitCache";
+import {
   classifyForkCommits,
   classifyUpstreamCommits,
   computeFullDiffStats,
   indexOfSha,
+  isDiffStatsReady,
   pageForCommitIndex,
   shaSet,
   sliceCommitPage,
@@ -50,6 +56,8 @@ export function ReposWorkbench() {
   const [forkBranches, setForkBranches] = useState<string[]>([]);
   const [upstreamAll, setUpstreamAll] = useState<RepoCommit[]>([]);
   const [forkAll, setForkAll] = useState<RepoCommit[]>([]);
+  const [upstreamComplete, setUpstreamComplete] = useState(false);
+  const [forkComplete, setForkComplete] = useState(false);
   const [upstreamPage, setUpstreamPage] = useState(1);
   const [forkPage, setForkPage] = useState(1);
   const [metaLoading, setMetaLoading] = useState(false);
@@ -63,6 +71,7 @@ export function ReposWorkbench() {
   const [metaReadyKey, setMetaReadyKey] = useState<string | null>(null);
 
   if (boundWorkspace !== workspaceKey) {
+    clearCommitCache();
     setBoundWorkspace(workspaceKey);
     setFork(null);
     setForkChecked(false);
@@ -76,6 +85,8 @@ export function ReposWorkbench() {
     setForkBranches([]);
     setUpstreamAll([]);
     setForkAll([]);
+    setUpstreamComplete(false);
+    setForkComplete(false);
     setUpstreamPage(1);
     setForkPage(1);
     setError(null);
@@ -299,6 +310,7 @@ export function ReposWorkbench() {
     ) {
       setUpstreamLoading(false);
       setUpstreamAll([]);
+      setUpstreamComplete(false);
       setUpstreamPage(1);
       return;
     }
@@ -308,18 +320,33 @@ export function ReposWorkbench() {
     const r = repo.trim();
 
     async function loadUpstreamCommits() {
-      setUpstreamLoading(true);
+      const cacheKey = commitCacheKey(o, r, upstreamBranch);
+      const cached = getCommitCache(cacheKey);
+      if (cached?.complete) {
+        setUpstreamAll(cached.commits);
+        setUpstreamComplete(true);
+        setUpstreamLoading(false);
+        return;
+      }
+
+      setUpstreamLoading(!cached?.commits.length);
+      setUpstreamComplete(false);
+      setUpstreamAll(cached?.commits ?? []);
       setError(null);
       try {
-        const upstream = await fetchAllCommits({
+        await fetchAllCommitsCached({
           token: token!,
           org: o,
           repo: r,
           branch: upstreamBranch,
           signal: ac.signal,
+          onProgress: ({ commits, complete }) => {
+            if (ac.signal.aborted) return;
+            setUpstreamAll(commits);
+            setUpstreamComplete(complete);
+            if (commits.length > 0) setUpstreamLoading(false);
+          },
         });
-        if (ac.signal.aborted) return;
-        setUpstreamAll(upstream);
       } catch (err) {
         if (ac.signal.aborted) return;
         if (err instanceof GitCodeHttpError && err.status === 401) {
@@ -329,6 +356,7 @@ export function ReposWorkbench() {
           setError(err instanceof Error ? err.message : "加载主仓 commit 失败");
         }
         setUpstreamAll([]);
+        setUpstreamComplete(false);
       } finally {
         if (!ac.signal.aborted) setUpstreamLoading(false);
       }
@@ -359,31 +387,50 @@ export function ReposWorkbench() {
     ) {
       setForkLoading(false);
       setForkAll([]);
+      setForkComplete(false);
       setForkPage(1);
       return;
     }
 
     if (!fork || !forkBranch || forkResolving) {
       setForkLoading(false);
-      if (!fork || forkResolving) setForkAll([]);
+      if (!fork || forkResolving) {
+        setForkAll([]);
+        setForkComplete(false);
+      }
       return;
     }
 
     const ac = new AbortController();
 
     async function loadForkCommits() {
-      setForkLoading(true);
+      const cacheKey = commitCacheKey(fork!.org, fork!.repo, forkBranch);
+      const cached = getCommitCache(cacheKey);
+      if (cached?.complete) {
+        setForkAll(cached.commits);
+        setForkComplete(true);
+        setForkLoading(false);
+        return;
+      }
+
+      setForkLoading(!cached?.commits.length);
+      setForkComplete(false);
+      setForkAll(cached?.commits ?? []);
       setError(null);
       try {
-        const forkList = await fetchAllCommits({
+        await fetchAllCommitsCached({
           token: token!,
           org: fork!.org,
           repo: fork!.repo,
           branch: forkBranch,
           signal: ac.signal,
+          onProgress: ({ commits, complete }) => {
+            if (ac.signal.aborted) return;
+            setForkAll(commits);
+            setForkComplete(complete);
+            if (commits.length > 0) setForkLoading(false);
+          },
         });
-        if (ac.signal.aborted) return;
-        setForkAll(forkList);
       } catch (err) {
         if (ac.signal.aborted) return;
         if (err instanceof GitCodeHttpError && err.status === 401) {
@@ -393,6 +440,7 @@ export function ReposWorkbench() {
           setError(err instanceof Error ? err.message : "加载 Fork commit 失败");
         }
         setForkAll([]);
+        setForkComplete(false);
       } finally {
         if (!ac.signal.aborted) setForkLoading(false);
       }
@@ -462,7 +510,9 @@ export function ReposWorkbench() {
     const upIdx = indexOfSha(upstreamAll, pendingScrollSha);
     const fkIdx = indexOfSha(forkAll, pendingScrollSha);
     if (upIdx < 0 && fkIdx < 0) {
-      setPendingScrollSha(null);
+      if (upstreamComplete && forkComplete) {
+        setPendingScrollSha(null);
+      }
       return;
     }
 
@@ -488,7 +538,13 @@ export function ReposWorkbench() {
     forkLoading,
     upstreamPage,
     forkPage,
+    upstreamComplete,
+    forkComplete,
   ]);
+
+  function formatTotal(count: number, complete: boolean): string {
+    return complete ? String(count) : `${count}…`;
+  }
 
   function scrollToLastShared() {
     if (lastSharedSha) {
@@ -512,8 +568,16 @@ export function ReposWorkbench() {
     );
   }
 
-  const statsReady =
-    !upstreamLoading && (!fork || !forkLoading) && !forkResolving;
+  const diffStatsReady =
+    fork &&
+    isDiffStatsReady(
+      upstreamAll,
+      forkAll,
+      upstreamComplete,
+      forkComplete,
+    );
+  const upstreamLoadingMore = !upstreamComplete && upstreamAll.length > 0;
+  const forkLoadingMore = !forkComplete && forkAll.length > 0;
 
   return (
     <div className={styles.root}>
@@ -558,12 +622,26 @@ export function ReposWorkbench() {
 
           <div className={styles.legend}>
             <div className={styles.legendMain}>
-              {statsReady ? (
+              {upstreamLoading && upstreamAll.length === 0 ? (
+                <span className={styles.legendMeta}>统计加载中…</span>
+              ) : (
                 <>
-                  <span>主仓 {fullStats.upstreamTotal} 个</span>
-                  <span className={styles.legendSep}>·</span>
-                  <span>Fork {fullStats.forkTotal} 个</span>
+                  <span>
+                    主仓 {formatTotal(fullStats.upstreamTotal, upstreamComplete)} 个
+                  </span>
                   {fork ? (
+                    <>
+                      <span className={styles.legendSep}>·</span>
+                      <span>
+                        Fork{" "}
+                        {forkAll.length > 0 || forkComplete
+                          ? formatTotal(fullStats.forkTotal, forkComplete)
+                          : "…"}{" "}
+                        个
+                      </span>
+                    </>
+                  ) : null}
+                  {fork && diffStatsReady ? (
                     <>
                       <span className={styles.legendSep}>·</span>
                       <span className={styles.legendFork}>
@@ -573,28 +651,37 @@ export function ReposWorkbench() {
                       <span className={styles.legendUpstream}>
                         落后 {fullStats.forkBehind}
                       </span>
+                      {lastSharedSha ? (
+                        <>
+                          <span className={styles.legendSep}>·</span>
+                          <button
+                            type="button"
+                            className={styles.lastSharedBtn}
+                            onClick={scrollToLastShared}
+                          >
+                            最后共有 {lastSharedSha.slice(0, 8)}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className={styles.legendSep}>·</span>
+                          <span className={styles.legendMeta}>无共有 commit</span>
+                        </>
+                      )}
+                    </>
+                  ) : fork && (forkLoading || forkAll.length > 0) ? (
+                    <>
+                      <span className={styles.legendSep}>·</span>
+                      <span className={styles.legendMeta}>对比统计加载中…</span>
                     </>
                   ) : null}
-                  {lastSharedSha ? (
+                  {upstreamLoadingMore || forkLoadingMore ? (
                     <>
                       <span className={styles.legendSep}>·</span>
-                      <button
-                        type="button"
-                        className={styles.lastSharedBtn}
-                        onClick={scrollToLastShared}
-                      >
-                        最后共有 {lastSharedSha.slice(0, 8)}
-                      </button>
-                    </>
-                  ) : statsReady && fork ? (
-                    <>
-                      <span className={styles.legendSep}>·</span>
-                      <span className={styles.legendMeta}>无共有 commit</span>
+                      <span className={styles.legendMeta}>继续拉取 commit…</span>
                     </>
                   ) : null}
                 </>
-              ) : (
-                <span className={styles.legendMeta}>统计加载中…</span>
               )}
             </div>
             <div className={styles.legendSide}>

@@ -150,7 +150,55 @@ export async function fetchCommits(options: {
 }
 
 const MAX_COMMIT_PAGES = 50;
-const COMMITS_FETCH_PER_PAGE = 100;
+export const COMMITS_FETCH_PER_PAGE = 100;
+const COMMIT_PAGE_CONCURRENCY = 4;
+
+export type FetchCommitsProgress = {
+  commits: RepoCommit[];
+  complete: boolean;
+};
+
+async function fetchCommitPageBatch(
+  options: {
+    token: string;
+    org: string;
+    repo: string;
+    branch: string;
+    signal?: AbortSignal;
+  },
+  startPage: number,
+  count: number,
+): Promise<{ batches: RepoCommit[][]; hitEnd: boolean }> {
+  const pages = Array.from({ length: count }, (_, index) => startPage + index).filter(
+    (page) => page <= MAX_COMMIT_PAGES,
+  );
+  if (pages.length === 0) {
+    return { batches: [], hitEnd: true };
+  }
+
+  const batches = await Promise.all(
+    pages.map((page) =>
+      fetchCommits({
+        ...options,
+        page,
+        perPage: COMMITS_FETCH_PER_PAGE,
+      }),
+    ),
+  );
+
+  let hitEnd = false;
+  for (const batch of batches) {
+    if (batch.length < COMMITS_FETCH_PER_PAGE) {
+      hitEnd = true;
+      break;
+    }
+  }
+  if (batches[batches.length - 1]?.length === 0) {
+    hitEnd = true;
+  }
+
+  return { batches, hitEnd };
+}
 
 export async function fetchAllCommits(options: {
   token: string;
@@ -158,17 +206,44 @@ export async function fetchAllCommits(options: {
   repo: string;
   branch: string;
   signal?: AbortSignal;
+  onProgress?: (progress: FetchCommitsProgress) => void;
 }): Promise<RepoCommit[]> {
+  const { onProgress, signal, ...rest } = options;
   const all: RepoCommit[] = [];
-  for (let page = 1; page <= MAX_COMMIT_PAGES; page += 1) {
-    const batch = await fetchCommits({
-      ...options,
-      page,
-      perPage: COMMITS_FETCH_PER_PAGE,
-    });
-    all.push(...batch);
-    if (batch.length < COMMITS_FETCH_PER_PAGE) break;
+
+  const first = await fetchCommits({
+    ...rest,
+    signal,
+    page: 1,
+    perPage: COMMITS_FETCH_PER_PAGE,
+  });
+  all.push(...first);
+  const firstComplete = first.length < COMMITS_FETCH_PER_PAGE;
+  onProgress?.({ commits: [...all], complete: firstComplete });
+  if (firstComplete) return all;
+
+  let nextPage = 2;
+  while (nextPage <= MAX_COMMIT_PAGES) {
+    const { batches, hitEnd } = await fetchCommitPageBatch(
+      { ...rest, signal },
+      nextPage,
+      COMMIT_PAGE_CONCURRENCY,
+    );
+    if (batches.length === 0) break;
+
+    for (const batch of batches) {
+      if (batch.length === 0) {
+        onProgress?.({ commits: [...all], complete: true });
+        return all;
+      }
+      all.push(...batch);
+    }
+
+    onProgress?.({ commits: [...all], complete: hitEnd });
+    if (hitEnd) break;
+    nextPage += COMMIT_PAGE_CONCURRENCY;
   }
+
   return all;
 }
 

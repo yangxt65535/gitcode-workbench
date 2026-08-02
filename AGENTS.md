@@ -84,6 +84,7 @@ mapGitCodeIssue / mapGitCodePull / mapGitCodeCommit / mapGitCodeComment
 - 新增 API 调用：在 `lib/gitcode/` 添加 fetch/map，**不要**在组件内拼 URL。
 - Issue/PR 列表：`total_count` / `total_page` 响应头常被 CORS 隐藏，Repository 内有 totals 探测与缓存逻辑，修改分页时须读 `gitcodeIssueRepository.ts` / `gitcodePullRepository.ts`。
 - Repos commit：`fetchAllCommits()` 最多 50 页 × 100 条；展示分页用 `sliceCommitPage()`。
+- Repos commit 缓存：`lib/repos/commitCache.ts`，按 `org/repo/branch` 内存缓存；每个仓库（主仓 / Fork 各自独立）最多保留 **3 个分支**（LRU）；切换 workspace 时 `clearCommitCache()`。
 
 ## 测试
 

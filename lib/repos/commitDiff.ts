@@ -94,6 +94,17 @@ export function computeFullDiffStats(
   };
 }
 
+/** Diff stats (ahead/behind/lastShared) are final once shared SHA is found or both lists are exhausted. */
+export function isDiffStatsReady(
+  upstream: RepoCommit[],
+  fork: RepoCommit[],
+  upstreamComplete: boolean,
+  forkComplete: boolean,
+): boolean {
+  if (computeFullDiffStats(upstream, fork).lastSharedSha != null) return true;
+  return upstreamComplete && forkComplete;
+}
+
 /** @deprecated use computeFullDiffStats().lastSharedSha */
 export function findLastSharedSha(
   upstream: ClassifiedCommit[],
