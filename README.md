@@ -30,7 +30,7 @@ npm test
 | `/` | 进入 Issues |
 | `/issues` | Issue 看板（列表 + 详情） |
 | `/pulls` | PR 看板（列表 + 详情） |
-| `/repos` | 占位页（首版未实现） |
+| `/repos` | 仓库对比（Fork 状态 + 主仓/Fork commit 对比） |
 | `/settings` | 占位页（首版未实现） |
 | `/design-system` | 设计规范样例页（色板、按钮、列表行等） |
 

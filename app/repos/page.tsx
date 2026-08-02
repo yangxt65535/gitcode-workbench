@@ -1,5 +1,12 @@
-import { EmptyState } from "@/components/ui/EmptyState";
+"use client";
+
+import { ReposWorkbench } from "@/components/repos/ReposWorkbench";
+import styles from "./page.module.css";
 
 export default function ReposPage() {
-  return <EmptyState>模块开发中</EmptyState>;
+  return (
+    <div className={styles.page}>
+      <ReposWorkbench />
+    </div>
+  );
 }

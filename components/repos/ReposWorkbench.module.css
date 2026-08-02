@@ -1,0 +1,197 @@
+.root {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.topLeft {
+  grid-column: 1;
+  grid-row: 1;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.topRight {
+  grid-column: 2;
+  grid-row: 1;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+}
+
+.bannerRow {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.legend {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.legendMain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.legendSide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.legendMeta {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.forkBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.forkBadgeOwn {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.forkLink {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.useMineBtn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.useMineBtn:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.root:has(.bannerRow) .legend {
+  grid-row: 3;
+  border-top: none;
+}
+
+.root:has(.bannerRow) .commitsRow {
+  grid-row: 4;
+}
+
+.legendSep {
+  color: var(--text-muted);
+}
+
+.legendUpstream {
+  color: var(--accent);
+}
+
+.legendFork {
+  color: var(--success);
+}
+
+.lastSharedBtn {
+  margin: 0;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--duration) var(--ease),
+    border-color var(--duration) var(--ease);
+}
+
+.lastSharedBtn:hover {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-color: var(--accent);
+}
+
+.commitsRow {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bottomLeft {
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.bottomRight {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottomFull {
+  grid-column: 1 / -1;
+  grid-row: 2 / -1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.emptyPage {
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
