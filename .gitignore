@@ -2,6 +2,7 @@
 .next/
 out/
 .env*
+.token
 .superpowers/
 .worktrees/
 *.log
