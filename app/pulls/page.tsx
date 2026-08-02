@@ -1,5 +1,12 @@
-import { EmptyState } from "@/components/ui/EmptyState";
+"use client";
+
+import { PullsWorkbench } from "@/components/pulls/PullsWorkbench";
+import styles from "./page.module.css";
 
 export default function PullsPage() {
-  return <EmptyState>模块开发中</EmptyState>;
+  return (
+    <div className={styles.page}>
+      <PullsWorkbench />
+    </div>
+  );
 }
