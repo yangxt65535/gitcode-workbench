@@ -25,6 +25,12 @@ npm test
 
 ## 功能概览
 
+### Dashboard（`/dashboard`）
+
+- 左右对半：组织内「我创建的」Issues / PRs（无详情页）
+- 顶栏共用仓库筛选（全部或指定仓）；两侧各自状态 / 标签 / 排序
+- 选中一侧自动高亮对侧可见关联项；PR 行可刷新标签与状态
+
 ### Issues（`/issues`）
 
 - 状态 / 创建者 / 指派人 / Label / 里程碑 / 标题搜索
@@ -49,10 +55,10 @@ npm test
 | 路径 | 说明 |
 |------|------|
 | `/` | 进入 Issues |
+| `/dashboard` | 组织级我的 Issue/PR 双栏看板 |
 | `/issues` | Issue 看板（列表 + 详情） |
 | `/pulls` | PR 看板（列表 + 详情） |
 | `/repos` | 仓库对比（Fork 状态 + 主仓/Fork commit 对比） |
-| `/settings` | 占位页（首版未实现） |
 | `/design-system` | 设计规范样例页（色板、按钮、列表行等） |
 
 ## Token 与 API
@@ -98,4 +104,4 @@ npx serve out
 
 代码结构、模块约定与 Agent 开发须知见 [AGENTS.md](./AGENTS.md)。
 
-模块设计规格见 `docs/superpowers/specs/`（Issues 总览、 [PR](docs/superpowers/specs/2026-08-02-gitcode-pulls-workbench-design.md)、 [Repos](docs/superpowers/specs/2026-08-02-gitcode-repos-workbench-design.md)）。
+模块设计规格见 `docs/superpowers/specs/`（Issues 总览、[Dashboard](docs/superpowers/specs/2026-08-08-gitcode-dashboard-design.md)、 [PR](docs/superpowers/specs/2026-08-02-gitcode-pulls-workbench-design.md)、 [Repos](docs/superpowers/specs/2026-08-02-gitcode-repos-workbench-design.md)）。

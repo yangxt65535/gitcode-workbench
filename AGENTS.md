@@ -25,6 +25,7 @@
 ```
 app/                    # 路由入口（薄包装，渲染 *Workbench）
 components/
+  dashboard/            # 组织级「我的」Issue/PR 双栏看板（无详情）
   issues/ pulls/ repos/ # 各模块 UI（Workbench + List + Detail + Filters）
   shell/                # AppShell、ModuleNav
   ui/                   # 通用组件（Button、Modal、TextInput…）
@@ -32,7 +33,8 @@ components/
 lib/
   auth/                 # AuthContext + localStorage
   workspace/            # WorkspaceContext + org/repo localStorage
-  gitcode/              # fetchGitCode、map*、fetch*Detail、fetchRepoData
+  gitcode/              # fetchGitCode、map*、fetch*Detail、fetchRepoData、fetchOrg*
+  dashboard/            # Dashboard 类型、queryLogic、关联 key、PR meta 合并
   issues/ pulls/ repos/ # 领域类型、queryLogic、Repository（如有）
 tests/                  # 与 lib/ 镜像的单元测试
 docs/superpowers/       # 设计文档与实现计划（参考用，非运行时依赖）
@@ -54,11 +56,13 @@ lib/{module}/gitcode*Repository.ts  → 列表分页与 meta 拉取（Issues、P
 
 **Repos 例外**：无 Repository 层，Workbench 直接调用 `lib/gitcode/fetchRepoData.ts` 与 `lib/repos/commitDiff.ts`。
 
+**Dashboard 例外**：组织级双栏（左 Issue / 右 PR）；无详情面板。Issue 为企业级「我创建的 ∪ 我负责的」（`creator` / `assignee`，可筛一类）；PR 为 `author`。顶栏组织+仓库同一行输入。选中后对侧只显示关联项；行内可刷新 state/labels。
+
 ### 共享上下文
 
-- **`useWorkspace()`** — 当前 `org` / `repo`；切换仓库时 Workbench 须重置本地 state（见下节）。
+- **`useWorkspace()`** — 当前 `org` / `repo`；`commitOrg(org)` 只改组织并保留 repo。切换仓库时单仓 Workbench 须重置本地 state（见下节）。
 - **`useAuth()`** — `token`、`username`、`ready`；401 时调用 `clearSession()`。
-- **`RepoConfirmBar`** — Issues / Pulls / Repos 共用，写入 Workspace。
+- **`RepoConfirmBar`** — Issues / Pulls / Repos 共用，写入 Workspace；Dashboard 用 `OrgConfirmBar`。
 
 ### Workbench 状态约定
 

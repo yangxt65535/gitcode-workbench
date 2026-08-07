@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import styles from "./ModuleNav.module.css";
 
 const LINKS = [
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/issues", label: "Issues" },
   { href: "/pulls", label: "Pulls" },
   { href: "/repos", label: "Repos" },
-  { href: "/settings", label: "Settings" },
 ] as const;
 
 export function ModuleNav() {

@@ -15,6 +15,8 @@ type WorkspaceContextValue = {
   org: string;
   repo: string;
   commitRepo: (next: { org: string; repo: string }) => void;
+  /** Update org only; keep existing repo so other modules are undisturbed. */
+  commitOrg: (org: string) => void;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -36,9 +38,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setRepoState(trimmed.repo);
   }, []);
 
+  const commitOrg = useCallback(
+    (nextOrg: string) => {
+      commitRepo({ org: nextOrg, repo });
+    },
+    [commitRepo, repo],
+  );
+
   const value = useMemo(
-    () => ({ org, repo, commitRepo }),
-    [org, repo, commitRepo],
+    () => ({ org, repo, commitRepo, commitOrg }),
+    [org, repo, commitRepo, commitOrg],
   );
 
   return (
