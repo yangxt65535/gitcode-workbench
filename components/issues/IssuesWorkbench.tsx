@@ -17,7 +17,7 @@ import {
 import { IssueList } from "./IssueList";
 import { IssueDetailPanel } from "./IssueDetailPanel";
 import { RepoConfirmBar } from "./RepoConfirmBar";
-import styles from "./IssuesWorkbench.module.css";
+import styles from "@/components/workbench/WorkbenchLayout.module.css";
 
 const DEFAULT_PER_PAGE = 20;
 

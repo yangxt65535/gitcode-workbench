@@ -104,13 +104,3 @@ export function isDiffStatsReady(
   if (computeFullDiffStats(upstream, fork).lastSharedSha != null) return true;
   return upstreamComplete && forkComplete;
 }
-
-/** @deprecated use computeFullDiffStats().lastSharedSha */
-export function findLastSharedSha(
-  upstream: ClassifiedCommit[],
-): string | null {
-  for (const item of upstream) {
-    if (item.kind === "shared") return item.commit.sha;
-  }
-  return null;
-}

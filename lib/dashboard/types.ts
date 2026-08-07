@@ -49,7 +49,6 @@ export const DEFAULT_ISSUE_PANE_FILTERS: DashboardPaneFilters = {
 };
 
 export const PAGE_SIZE = 20;
-export const MAX_ORG_REPOS = 100;
 export const PULL_FETCH_CONCURRENCY = 5;
 export const MAX_ISSUES_PAGES = 20;
 export const MAX_PULL_PAGES_PER_REPO = 10;

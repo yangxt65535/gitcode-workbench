@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { TextInput } from "@/components/ui/TextInput";
 import type { PullMeta } from "@/lib/pulls/types";
-import styles from "./PullFilters.module.css";
+import styles from "@/components/workbench/Filters.module.css";
 
 export type PullFiltersValue = {
   state: string[];

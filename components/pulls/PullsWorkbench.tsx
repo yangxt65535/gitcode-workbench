@@ -17,7 +17,7 @@ import {
 } from "./PullFilters";
 import { PullList } from "./PullList";
 import { PullDetailPanel } from "./PullDetailPanel";
-import styles from "./PullsWorkbench.module.css";
+import styles from "@/components/workbench/WorkbenchLayout.module.css";
 
 const DEFAULT_PER_PAGE = 20;
 

@@ -1,5 +1,9 @@
 import type { DashboardPaneFilters } from "./types";
+import { itemKey } from "./itemKey";
+import { activeFilter, uniqueSorted } from "@/lib/shared/filterUtils";
+
 export { DEFAULT_PANE_FILTERS, DEFAULT_ISSUE_PANE_FILTERS } from "./types";
+export { activeFilter, uniqueSorted } from "@/lib/shared/filterUtils";
 
 type Labeled = {
   state: string;
@@ -9,10 +13,6 @@ type Labeled = {
   updated_at: string;
   merged_at?: string | null;
 };
-
-function activeFilter(values?: string[]): values is string[] {
-  return Array.isArray(values) && values.length > 0;
-}
 
 function matchesState(item: Labeled, states: string[]): boolean {
   const normalized = item.state.trim().toLowerCase();
@@ -71,10 +71,6 @@ export function slicePage<T>(items: T[], page: number, perPage: number): T[] {
   return items.slice(start, start + size);
 }
 
-export function uniqueSorted(values: Iterable<string>): string[] {
-  return [...new Set(values)].sort((a, b) => a.localeCompare(b));
-}
-
 export function collectLabels(items: { labels: { name: string }[] }[]): string[] {
   return uniqueSorted(items.flatMap((i) => i.labels.map((l) => l.name)));
 }
@@ -83,5 +79,5 @@ export function filterByItemKeys<
   T extends { repo: string; number: number },
 >(items: T[], keys: Set<string>): T[] {
   if (keys.size === 0) return [];
-  return items.filter((item) => keys.has(`${item.repo.trim()}#${item.number}`));
+  return items.filter((item) => keys.has(itemKey(item.repo, item.number)));
 }

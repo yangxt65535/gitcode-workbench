@@ -11,6 +11,3 @@ export function mergeDashboardMeta<T extends DashboardIssue>(
     ...(patch.updated_at != null ? { updated_at: patch.updated_at } : {}),
   };
 }
-
-/** @deprecated use mergeDashboardMeta */
-export const mergePullMeta = mergeDashboardMeta;

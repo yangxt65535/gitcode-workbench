@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { TextInput } from "@/components/ui/TextInput";
 import type { IssueMeta } from "@/lib/issues/types";
-import styles from "./IssueFilters.module.css";
+import styles from "@/components/workbench/Filters.module.css";
 
 export type IssueFiltersValue = {
   state: string[];

@@ -16,6 +16,7 @@ import {
 } from "@/lib/issues/detailNav";
 import type { Pull, PullComment } from "@/lib/pulls/types";
 import styles from "./PullDetailPanel.module.css";
+import { formatTime } from "@/lib/shared/formatTime";
 
 type PullDetailPanelProps = {
   org: string;
@@ -24,18 +25,6 @@ type PullDetailPanelProps = {
   selectedNumber: number | null;
   onSelect: (number: number) => void;
 };
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function pullHref(pull: Pull, org: string, repo: string): string {
   if (pull.html_url) return pull.html_url;

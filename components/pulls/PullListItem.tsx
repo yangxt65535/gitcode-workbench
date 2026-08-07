@@ -1,6 +1,7 @@
 "use client";
 
 import type { Pull } from "@/lib/pulls/types";
+import { formatTime } from "@/lib/shared/formatTime";
 import styles from "./PullListItem.module.css";
 
 type PullListItemProps = {
@@ -8,18 +9,6 @@ type PullListItemProps = {
   selected: boolean;
   onSelect: (number: number) => void;
 };
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function stateDotClass(state: string): string {
   const s = state.toLowerCase();

@@ -12,7 +12,7 @@ import { fetchPullRelatedIssues } from "@/lib/gitcode/fetchPullRelatedIssues";
 import { refreshIssueMeta } from "@/lib/gitcode/refreshIssueMeta";
 import { refreshPullMeta } from "@/lib/gitcode/refreshPullMeta";
 import { itemKey } from "@/lib/dashboard/itemKey";
-import { mergeDashboardMeta } from "@/lib/dashboard/mergePullMeta";
+import { mergeDashboardMeta } from "@/lib/dashboard/mergeDashboardMeta";
 import {
   collectLabels,
   filterByItemKeys,
@@ -31,9 +31,8 @@ import {
   type DashboardSelection,
 } from "@/lib/dashboard/types";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
-import { IssuePane } from "./IssuePane";
+import { DashboardPane } from "./DashboardPane";
 import { OrgConfirmBar } from "./OrgConfirmBar";
-import { PullPane } from "./PullPane";
 import styles from "./DashboardWorkbench.module.css";
 
 /** Empty string = all repos; otherwise exact repo path. */
@@ -458,7 +457,9 @@ export function DashboardWorkbench() {
             </div>
           ) : null}
           <div className={styles.panes}>
-            <IssuePane
+            <DashboardPane
+              side="issue"
+              title="Issues"
               filters={issueFilters}
               labelOptions={issueLabels}
               onFiltersChange={handleIssueFiltersChange}
@@ -485,7 +486,9 @@ export function DashboardWorkbench() {
               }
             />
             <div className={styles.divider} />
-            <PullPane
+            <DashboardPane
+              side="pull"
+              title="Pull Requests"
               filters={pullFilters}
               labelOptions={pullLabels}
               onFiltersChange={handlePullFiltersChange}

@@ -2,36 +2,22 @@
 
 import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { formatTime } from "@/lib/shared/formatTime";
 import type { DashboardIssue } from "@/lib/dashboard/types";
 import styles from "./DashboardListItem.module.css";
 
 type DashboardListItemProps = {
-  side: "issue" | "pull";
   item: DashboardIssue;
   selected: boolean;
-  related: boolean;
   onSelect: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
   sortField: "created" | "updated";
 };
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function DashboardListItem({
   item,
   selected,
-  related,
   onSelect,
   onRefresh,
   refreshing,
@@ -51,7 +37,6 @@ export function DashboardListItem({
   const rowClass = [
     "row",
     selected ? "rowSelected" : "",
-    related && !selected ? styles.related : "",
     styles.item,
   ]
     .filter(Boolean)

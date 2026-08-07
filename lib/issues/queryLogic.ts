@@ -1,8 +1,7 @@
 import type { Issue, IssueQuery } from "./types";
+import { activeFilter, uniqueSorted } from "@/lib/shared/filterUtils";
 
-export function activeFilter(values?: string[]): values is string[] {
-  return Array.isArray(values) && values.length > 0;
-}
+export { activeFilter, uniqueSorted } from "@/lib/shared/filterUtils";
 
 export function matchesQuery(issue: Issue, query: IssueQuery): boolean {
   if (activeFilter(query.state) && !query.state.includes(issue.state)) {
@@ -52,10 +51,6 @@ export function sortIssues(
     const diff = Date.parse(a[field]) - Date.parse(b[field]);
     return diff * mul;
   });
-}
-
-export function uniqueSorted(values: Iterable<string>): string[] {
-  return [...new Set(values)].sort((a, b) => a.localeCompare(b));
 }
 
 export function buildMetaFromIssues(issues: Issue[]) {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { mergePullMeta } from "@/lib/dashboard/mergePullMeta";
+import { mergeDashboardMeta } from "@/lib/dashboard/mergeDashboardMeta";
 
-describe("mergePullMeta", () => {
+describe("mergeDashboardMeta", () => {
   it("patches state labels updated_at only", () => {
     const pull = {
       org: "o",
@@ -15,7 +15,7 @@ describe("mergePullMeta", () => {
       updated_at: "2026-01-01T00:00:00Z",
       html_url: "",
     };
-    const next = mergePullMeta(pull, {
+    const next = mergeDashboardMeta(pull, {
       state: "closed",
       labels: [{ name: "x" }],
       updated_at: "2026-04-01T00:00:00Z",

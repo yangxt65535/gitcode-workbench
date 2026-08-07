@@ -5,32 +5,36 @@ import { DashboardListItem } from "./DashboardListItem";
 import { PaneFilters } from "./PaneFilters";
 import { itemKey } from "@/lib/dashboard/itemKey";
 import type {
+  DashboardIssue,
   DashboardPaneFilters,
-  DashboardPull,
   DashboardSelection,
 } from "@/lib/dashboard/types";
 import styles from "./Pane.module.css";
 
-type PullPaneProps = {
+type DashboardPaneProps<T extends DashboardIssue> = {
+  side: "issue" | "pull";
+  title: string;
   filters: DashboardPaneFilters;
   labelOptions: string[];
   onFiltersChange: (next: DashboardPaneFilters) => void;
-  items: DashboardPull[];
+  items: T[];
   loading: boolean;
   page: number;
   totalPage: number;
   totalCount: number;
   onPageChange: (page: number) => void;
   selection: DashboardSelection | null;
-  onSelect: (item: DashboardPull) => void;
-  onRefresh: (item: DashboardPull) => void;
-  refreshingKey: string | null;
-  emptyHint?: string;
+  onSelect: (item: T) => void;
+  onRefresh?: (item: T) => void;
+  refreshingKey?: string | null;
+  emptyHint: string;
   headerHint?: string | null;
   disabled?: boolean;
 };
 
-export function PullPane({
+export function DashboardPane<T extends DashboardIssue>({
+  side,
+  title,
   filters,
   labelOptions,
   onFiltersChange,
@@ -43,21 +47,24 @@ export function PullPane({
   selection,
   onSelect,
   onRefresh,
-  refreshingKey,
-  emptyHint = "当前筛选条件下暂无 PR",
+  refreshingKey = null,
+  emptyHint,
   headerHint,
   disabled,
-}: PullPaneProps) {
+}: DashboardPaneProps<T>) {
   return (
-    <section className={styles.pane} aria-label="Pull Requests">
+    <section
+      className={styles.pane}
+      aria-label={side === "issue" ? "Issues" : "Pull Requests"}
+    >
       <header className={styles.header}>
-        Pull Requests
+        {title}
         {headerHint ? (
           <span className={styles.headerHint}>{headerHint}</span>
         ) : null}
       </header>
       <PaneFilters
-        side="pull"
+        side={side}
         value={filters}
         labelOptions={labelOptions}
         onChange={onFiltersChange}
@@ -74,18 +81,16 @@ export function PullPane({
           items.map((item) => {
             const key = itemKey(item.repo, item.number);
             const selected =
-              selection?.side === "pull" &&
+              selection?.side === side &&
               selection.repo === item.repo &&
               selection.number === item.number;
             return (
               <DashboardListItem
                 key={key}
-                side="pull"
                 item={item}
                 selected={selected}
-                related={false}
                 onSelect={() => onSelect(item)}
-                onRefresh={() => onRefresh(item)}
+                onRefresh={onRefresh ? () => onRefresh(item) : undefined}
                 refreshing={refreshingKey === key}
                 sortField={filters.sort}
               />

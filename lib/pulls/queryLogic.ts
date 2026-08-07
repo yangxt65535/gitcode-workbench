@@ -1,8 +1,7 @@
 import type { Pull, PullMeta, PullQuery } from "./types";
+import { activeFilter, uniqueSorted } from "@/lib/shared/filterUtils";
 
-export function activeFilter(values?: string[]): values is string[] {
-  return Array.isArray(values) && values.length > 0;
-}
+export { activeFilter, uniqueSorted } from "@/lib/shared/filterUtils";
 
 function normalizeState(state: string): string {
   const s = state.trim().toLowerCase();
@@ -44,10 +43,6 @@ export function matchesQuery(pull: Pull, query: PullQuery): boolean {
     return false;
   }
   return true;
-}
-
-export function uniqueSorted(values: Iterable<string>): string[] {
-  return [...new Set(values)].sort((a, b) => a.localeCompare(b));
 }
 
 export function buildMetaFromPulls(pulls: Pull[]): PullMeta {

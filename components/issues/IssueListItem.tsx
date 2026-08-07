@@ -1,6 +1,7 @@
 "use client";
 
 import type { Issue } from "@/lib/issues/types";
+import { formatTime } from "@/lib/shared/formatTime";
 import styles from "./IssueListItem.module.css";
 
 type IssueListItemProps = {
@@ -8,18 +9,6 @@ type IssueListItemProps = {
   selected: boolean;
   onSelect: (number: number) => void;
 };
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function IssueListItem({
   issue,
