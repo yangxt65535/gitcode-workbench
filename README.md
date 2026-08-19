@@ -11,10 +11,10 @@ npm install
 npm run dev
 ```
 
-访问 [http://localhost:3000](http://localhost:3000)。根路径 `/` 会进入 `/issues`。
+访问 [http://localhost:3000](http://localhost:3000)。根路径 `/` 会进入 `/dashboard`。
 
 1. 点击右上角 **配置 Token**，粘贴 GitCode Personal Access Token 并确认（浏览器直连 GitCode 校验用户）。
-2. 在各模块 **左栏顶部**填写组织 / 仓库，点击 **确认**（写入 `localStorage` 并拉取数据）。
+2. 在各模块 **左栏顶部**填写组织 / 仓库，点击 **确认**（写入 `localStorage` 并拉取数据）。Issues / Pulls 每次新会话需再次确认仓库后才会发请求，不会沿用上次仓库自动拉取。
 3. 使用筛选、排序与分页浏览列表；右侧展示详情。
 
 运行测试：
@@ -33,13 +33,13 @@ npm test
 
 ### Issues（`/issues`）
 
-- 状态 / 创建者 / 指派人 / Label / 里程碑 / 标题搜索
+- 默认只拉取 **open** 状态；状态 / 创建者 / 指派人 / Label / 里程碑 / 标题搜索
 - 创建时间、更新时间排序与分页
 - 右侧详情：基本信息、Markdown 正文、评论、关联 PR
 
 ### Pull Requests（`/pulls`）
 
-- 状态 / 创建者 / 目标分支 / Label / 里程碑 / 标题搜索
+- 默认只拉取 **open** 状态；状态 / 创建者 / 目标分支 / Label / 里程碑 / 标题搜索
 - 创建时间、更新时间排序与分页
 - 右侧详情：基本信息、Markdown 正文、PR 评论
 
@@ -54,7 +54,7 @@ npm test
 
 | 路径 | 说明 |
 |------|------|
-| `/` | 进入 Issues |
+| `/` | 进入 Dashboard |
 | `/dashboard` | 组织级我的 Issue/PR 双栏看板 |
 | `/issues` | Issue 看板（列表 + 详情） |
 | `/pulls` | PR 看板（列表 + 详情） |

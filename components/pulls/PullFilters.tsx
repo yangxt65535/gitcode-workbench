@@ -19,7 +19,7 @@ export type PullFiltersValue = {
 };
 
 export const DEFAULT_PULL_FILTERS: PullFiltersValue = {
-  state: [],
+  state: ["open"],
   creator: [],
   base: [],
   label: [],

@@ -19,7 +19,7 @@ export type IssueFiltersValue = {
 };
 
 export const DEFAULT_ISSUE_FILTERS: IssueFiltersValue = {
-  state: [],
+  state: ["open"],
   creator: [],
   assignee: [],
   label: [],

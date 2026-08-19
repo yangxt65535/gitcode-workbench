@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { GitCodeHttpError } from "@/lib/gitcode/client";
 import { GitCodePullRepository } from "@/lib/pulls/gitcodePullRepository";
 import type { Pull, PullMeta } from "@/lib/pulls/types";
+import { isConfirmedRepoListReady } from "@/lib/workspace/listReady";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { RepoConfirmBar } from "@/components/issues/RepoConfirmBar";
 import {
@@ -22,10 +23,10 @@ import styles from "@/components/workbench/WorkbenchLayout.module.css";
 const DEFAULT_PER_PAGE = 20;
 
 export function PullsWorkbench() {
-  const { org, repo } = useWorkspace();
+  const { org, repo, repoConfirmed } = useWorkspace();
   const { token, ready: authReady, clearSession } = useAuth();
   const workspaceKey = `${org.trim()}\0${repo.trim()}`;
-  const ready = Boolean(org.trim() && repo.trim());
+  const ready = isConfirmedRepoListReady({ org, repo, repoConfirmed });
   const authed = Boolean(token);
 
   const [filters, setFilters] = useState<PullFiltersValue>(DEFAULT_PULL_FILTERS);
@@ -180,7 +181,7 @@ export function PullsWorkbench() {
   return (
     <div className={styles.root}>
       <div className={styles.left}>
-        <RepoConfirmBar disabled={loading} />
+        <RepoConfirmBar disabled={loading} retainStoredRepo={repoConfirmed} />
         {!ready ? (
           <div className={styles.leftEmpty}>
             <EmptyState>请填写组织和仓库并确认</EmptyState>
