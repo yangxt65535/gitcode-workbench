@@ -7,6 +7,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { GitCodeHttpError } from "@/lib/gitcode/client";
 import { GitCodeIssueRepository } from "@/lib/issues/gitcodeIssueRepository";
+import { isConfirmedRepoListReady } from "@/lib/workspace/listReady";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import type { Issue, IssueMeta } from "@/lib/issues/types";
 import {
@@ -22,10 +23,10 @@ import styles from "@/components/workbench/WorkbenchLayout.module.css";
 const DEFAULT_PER_PAGE = 20;
 
 export function IssuesWorkbench() {
-  const { org, repo } = useWorkspace();
+  const { org, repo, repoConfirmed } = useWorkspace();
   const { token, ready: authReady, clearSession } = useAuth();
   const workspaceKey = `${org.trim()}\0${repo.trim()}`;
-  const ready = Boolean(org.trim() && repo.trim());
+  const ready = isConfirmedRepoListReady({ org, repo, repoConfirmed });
   const authed = Boolean(token);
 
   const [filters, setFilters] = useState<IssueFiltersValue>(DEFAULT_ISSUE_FILTERS);
@@ -180,7 +181,7 @@ export function IssuesWorkbench() {
   return (
     <div className={styles.root}>
       <div className={styles.left}>
-        <RepoConfirmBar disabled={loading} />
+        <RepoConfirmBar disabled={loading} retainStoredRepo={repoConfirmed} />
         {!ready ? (
           <div className={styles.leftEmpty}>
             <EmptyState>请填写组织和仓库并确认</EmptyState>

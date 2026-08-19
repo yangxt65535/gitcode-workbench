@@ -4,17 +4,31 @@ import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/TextInput";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
+import { repoDraftFromWorkspace } from "@/lib/workspace/listReady";
 import styles from "./RepoConfirmBar.module.css";
 
-export function RepoConfirmBar({ disabled = false }: { disabled?: boolean }) {
+export function RepoConfirmBar({
+  disabled = false,
+  retainStoredRepo = true,
+}: {
+  disabled?: boolean;
+  /** When false, leave the repo field empty so last visit's repo is not reused. */
+  retainStoredRepo?: boolean;
+}) {
   const { org, repo, commitRepo } = useWorkspace();
   const [draftOrg, setDraftOrg] = useState(org);
-  const [draftRepo, setDraftRepo] = useState(repo);
+  const [draftRepo, setDraftRepo] = useState(() =>
+    repoDraftFromWorkspace(repo, retainStoredRepo),
+  );
 
   useEffect(() => {
     setDraftOrg(org);
+  }, [org]);
+
+  useEffect(() => {
+    if (!retainStoredRepo) return;
     setDraftRepo(repo);
-  }, [org, repo]);
+  }, [repo, retainStoredRepo]);
 
   function confirm() {
     commitRepo({ org: draftOrg, repo: draftRepo });

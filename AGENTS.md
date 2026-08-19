@@ -60,9 +60,10 @@ lib/{module}/gitcode*Repository.ts  → 列表分页与 meta 拉取（Issues、P
 
 ### 共享上下文
 
-- **`useWorkspace()`** — 当前 `org` / `repo`；`commitOrg(org)` 只改组织并保留 repo。切换仓库时单仓 Workbench 须重置本地 state（见下节）。
+- **`useWorkspace()`** — 当前 `org` / `repo` / `repoConfirmed`；`commitOrg(org)` 只改组织并保留 repo，**不**把 `repoConfirmed` 置 true。切换仓库时单仓 Workbench 须重置本地 state（见下节）。
+- **`repoConfirmed`** — 仅本 SPA 会话内用户点击仓库「确认」（`commitRepo`）后为 true。从 localStorage 恢复 org/repo **不会**让 Issues/Pulls 自动发请求；Repos 仍可用已恢复的 org/repo。
 - **`useAuth()`** — `token`、`username`、`ready`；401 时调用 `clearSession()`。
-- **`RepoConfirmBar`** — Issues / Pulls / Repos 共用，写入 Workspace；Dashboard 用 `OrgConfirmBar`。
+- **`RepoConfirmBar`** — Issues / Pulls / Repos 共用，写入 Workspace；Dashboard 用 `OrgConfirmBar`。Issues/Pulls 传入 `retainStoredRepo={repoConfirmed}`，初次打开不预填上次仓库。
 
 ### Workbench 状态约定
 
