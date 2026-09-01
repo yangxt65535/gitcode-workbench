@@ -14,9 +14,10 @@ import {
 } from "@/lib/gitcode/fetchRepoData";
 import {
   clearCommitCache,
+  commitCacheKey,
   fetchAllCommitsCached,
   getCommitCache,
-  commitCacheKey,
+  invalidateCommitCache,
 } from "@/lib/repos/commitCache";
 import {
   classifyForkCommits,
@@ -66,6 +67,8 @@ export function ReposWorkbench() {
   const [forkLoading, setForkLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryToken, setRetryToken] = useState(0);
+  const [upstreamReloadToken, setUpstreamReloadToken] = useState(0);
+  const [forkReloadToken, setForkReloadToken] = useState(0);
   const [scrollToLastSharedToken, setScrollToLastSharedToken] = useState(0);
   const [pendingScrollSha, setPendingScrollSha] = useState<string | null>(null);
   const [metaReadyKey, setMetaReadyKey] = useState<string | null>(null);
@@ -300,6 +303,21 @@ export function ReposWorkbench() {
     setPendingScrollSha(null);
   }
 
+  function refreshUpstreamCommits() {
+    invalidateCommitCache(
+      commitCacheKey(org.trim(), repo.trim(), upstreamBranch),
+    );
+    setUpstreamPage(1);
+    setUpstreamReloadToken((t) => t + 1);
+  }
+
+  function refreshForkCommits() {
+    if (!fork) return;
+    invalidateCommitCache(commitCacheKey(fork.org, fork.repo, forkBranch));
+    setForkPage(1);
+    setForkReloadToken((t) => t + 1);
+  }
+
   useEffect(() => {
     if (
       !authReady ||
@@ -375,6 +393,7 @@ export function ReposWorkbench() {
     upstreamBranch,
     metaReadyKey,
     clearSession,
+    upstreamReloadToken,
   ]);
 
   useEffect(() => {
@@ -459,6 +478,7 @@ export function ReposWorkbench() {
     forkResolving,
     metaReadyKey,
     clearSession,
+    forkReloadToken,
   ]);
 
   const fullStats = useMemo(
@@ -747,6 +767,7 @@ export function ReposWorkbench() {
                 totalCount={upstreamAll.length}
                 onPageChange={setUpstreamPage}
                 onBranchChange={onUpstreamBranchChange}
+                onRefresh={refreshUpstreamCommits}
               />
             </div>
             <div className={styles.bottomRight}>
@@ -775,6 +796,7 @@ export function ReposWorkbench() {
                 totalCount={forkAll.length}
                 onPageChange={setForkPage}
                 onBranchChange={onForkBranchChange}
+                onRefresh={refreshForkCommits}
               />
             </div>
           </div>

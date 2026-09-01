@@ -220,6 +220,10 @@ export function IssuesWorkbench() {
               totalPage={totalPage}
               totalCount={totalCount}
               onPageChange={setPage}
+              onRefresh={() => {
+                metaWorkspaceRef.current = null;
+                setRetryToken((t) => t + 1);
+              }}
             />
           </>
         )}

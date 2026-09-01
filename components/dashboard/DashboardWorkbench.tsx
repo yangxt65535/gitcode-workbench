@@ -80,6 +80,8 @@ export function DashboardWorkbench() {
   const [pullRefreshingKey, setPullRefreshingKey] = useState<string | null>(
     null,
   );
+  const [issueReloadToken, setIssueReloadToken] = useState(0);
+  const [pullReloadToken, setPullReloadToken] = useState(0);
 
   if (boundOrg !== orgKey) {
     setBoundOrg(orgKey);
@@ -216,6 +218,7 @@ export function DashboardWorkbench() {
     issueStateParam,
     issueSort,
     issueDirection,
+    issueReloadToken,
     clearSession,
   ]);
 
@@ -269,6 +272,7 @@ export function DashboardWorkbench() {
     pullStateParam,
     pullSort,
     pullDirection,
+    pullReloadToken,
     clearSession,
   ]);
 
@@ -484,6 +488,7 @@ export function DashboardWorkbench() {
                   ? "当前筛选下暂无关联 Issue"
                   : "当前筛选条件下暂无 Issue"
               }
+              onReload={() => setIssueReloadToken((t) => t + 1)}
             />
             <div className={styles.divider} />
             <DashboardPane
@@ -513,6 +518,7 @@ export function DashboardWorkbench() {
                   ? "当前筛选下暂无关联 PR"
                   : "当前筛选条件下暂无 PR"
               }
+              onReload={() => setPullReloadToken((t) => t + 1)}
             />
           </div>
         </>

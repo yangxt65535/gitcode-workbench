@@ -14,6 +14,7 @@ type PagedEntityListProps = {
   totalPage: number | null;
   totalCount: number | null;
   onPageChange: (page: number) => void;
+  onRefresh?: () => void;
   children: ReactNode;
 };
 
@@ -26,6 +27,7 @@ export function PagedEntityList({
   totalPage,
   totalCount,
   onPageChange,
+  onRefresh,
   children,
 }: PagedEntityListProps) {
   const knownTotalPage = totalPage != null && totalPage > 0 ? totalPage : null;
@@ -82,7 +84,19 @@ export function PagedEntityList({
       )}
 
       <div className={styles.pager}>
-        <div className={styles.pagerSummary}>{summary}</div>
+        <div className={styles.pagerTop}>
+          <div className={styles.pagerSummary}>{summary}</div>
+          {onRefresh ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loading}
+              onClick={onRefresh}
+            >
+              刷新
+            </Button>
+          ) : null}
+        </div>
         <div className={styles.pagerControls}>
           <Button
             type="button"

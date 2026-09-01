@@ -14,6 +14,7 @@ type IssueListProps = {
   totalPage: number | null;
   totalCount: number | null;
   onPageChange: (page: number) => void;
+  onRefresh?: () => void;
 };
 
 export function IssueList({
@@ -26,6 +27,7 @@ export function IssueList({
   totalPage,
   totalCount,
   onPageChange,
+  onRefresh,
 }: IssueListProps) {
   return (
     <PagedEntityList
@@ -37,6 +39,7 @@ export function IssueList({
       totalPage={totalPage}
       totalCount={totalCount}
       onPageChange={onPageChange}
+      onRefresh={onRefresh}
     >
       {items.map((issue) => (
         <IssueListItem

@@ -48,6 +48,7 @@ export function IssueDetailPanel({
   const [relatedPulls, setRelatedPulls] = useState<RelatedPull[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
   const nav = canNavigate(numbers, selectedNumber);
 
   const externalUrl =
@@ -101,7 +102,7 @@ export function IssueDetailPanel({
     }
     void run();
     return () => ac.abort();
-  }, [selectedNumber, org, repo, token, clearSession]);
+  }, [selectedNumber, org, repo, token, clearSession, reloadToken]);
 
   function goPrev() {
     const n = neighbor(numbers, selectedNumber, -1);
@@ -132,6 +133,13 @@ export function IssueDetailPanel({
           </Button>
           <Button variant="secondary" disabled={!nav.next} onClick={goNext}>
             下一个
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={selectedNumber == null || loading || !org || !repo}
+            onClick={() => setReloadToken((t) => t + 1)}
+          >
+            刷新
           </Button>
         </div>
         <div className={styles.jump}>
