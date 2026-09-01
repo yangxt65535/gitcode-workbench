@@ -30,6 +30,7 @@ type DashboardPaneProps<T extends DashboardIssue> = {
   emptyHint: string;
   headerHint?: string | null;
   disabled?: boolean;
+  onReload?: () => void;
 };
 
 export function DashboardPane<T extends DashboardIssue>({
@@ -51,6 +52,7 @@ export function DashboardPane<T extends DashboardIssue>({
   emptyHint,
   headerHint,
   disabled,
+  onReload,
 }: DashboardPaneProps<T>) {
   return (
     <section
@@ -58,9 +60,21 @@ export function DashboardPane<T extends DashboardIssue>({
       aria-label={side === "issue" ? "Issues" : "Pull Requests"}
     >
       <header className={styles.header}>
-        {title}
-        {headerHint ? (
-          <span className={styles.headerHint}>{headerHint}</span>
+        <div className={styles.headerMain}>
+          {title}
+          {headerHint ? (
+            <span className={styles.headerHint}>{headerHint}</span>
+          ) : null}
+        </div>
+        {onReload ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={disabled || loading}
+            onClick={onReload}
+          >
+            刷新
+          </Button>
         ) : null}
       </header>
       <PaneFilters

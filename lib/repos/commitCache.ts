@@ -70,6 +70,18 @@ export function clearCommitCache(): void {
   repoBranchOrder.clear();
 }
 
+/** Drop one branch so the next fetch hits GitCode instead of memory. */
+export function invalidateCommitCache(key: string): void {
+  cache.delete(key);
+  const repoKey = repoKeyFromBranchKey(key);
+  const order = repoBranchOrder.get(repoKey);
+  if (!order) return;
+  repoBranchOrder.set(
+    repoKey,
+    order.filter((item) => item !== key),
+  );
+}
+
 /** Returns cached commits when complete; otherwise fetches and updates cache incrementally. */
 export async function fetchAllCommitsCached(options: {
   token: string;

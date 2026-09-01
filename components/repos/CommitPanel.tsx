@@ -21,6 +21,7 @@ type CommitPanelProps = {
   totalCount: number;
   onPageChange: (page: number) => void;
   onBranchChange: (branch: string) => void;
+  onRefresh?: () => void;
 };
 
 const KIND_LABEL: Record<CommitDiffKind, string> = {
@@ -55,6 +56,7 @@ export function CommitPanel({
   totalCount,
   onPageChange,
   onBranchChange,
+  onRefresh,
 }: CommitPanelProps) {
   const listWrapRef = useRef<HTMLDivElement>(null);
   const [pageDraft, setPageDraft] = useState(String(page));
@@ -101,25 +103,37 @@ export function CommitPanel({
     <div className={styles.root}>
       <div className={styles.header}>
         <span className={styles.title}>{title}</span>
-        <label className={styles.branchField}>
-          <span className={styles.branchLabel}>分支</span>
-          <select
-            className={styles.select}
-            value={branch}
-            disabled={disabled || loading || branches.length === 0}
-            onChange={(e) => onBranchChange(e.target.value)}
-          >
-            {branches.length === 0 ? (
-              <option value={branch}>{branch || "—"}</option>
-            ) : (
-              branches.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))
-            )}
-          </select>
-        </label>
+        <div className={styles.headerActions}>
+          <label className={styles.branchField}>
+            <span className={styles.branchLabel}>分支</span>
+            <select
+              className={styles.select}
+              value={branch}
+              disabled={disabled || loading || branches.length === 0}
+              onChange={(e) => onBranchChange(e.target.value)}
+            >
+              {branches.length === 0 ? (
+                <option value={branch}>{branch || "—"}</option>
+              ) : (
+                branches.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+          {onRefresh ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={disabled || loading}
+              onClick={onRefresh}
+            >
+              刷新
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div

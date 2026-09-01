@@ -14,6 +14,7 @@ type PullListProps = {
   totalPage: number | null;
   totalCount: number | null;
   onPageChange: (page: number) => void;
+  onRefresh?: () => void;
 };
 
 export function PullList({
@@ -26,6 +27,7 @@ export function PullList({
   totalPage,
   totalCount,
   onPageChange,
+  onRefresh,
 }: PullListProps) {
   return (
     <PagedEntityList
@@ -37,6 +39,7 @@ export function PullList({
       totalPage={totalPage}
       totalCount={totalCount}
       onPageChange={onPageChange}
+      onRefresh={onRefresh}
     >
       {items.map((pull) => (
         <PullListItem

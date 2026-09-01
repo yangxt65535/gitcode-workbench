@@ -46,6 +46,7 @@ export function PullDetailPanel({
   const [comments, setComments] = useState<PullComment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
   const nav = canNavigate(numbers, selectedNumber);
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export function PullDetailPanel({
     }
     void run();
     return () => ac.abort();
-  }, [selectedNumber, org, repo, token, clearSession]);
+  }, [selectedNumber, org, repo, token, clearSession, reloadToken]);
 
   function goPrev() {
     const n = neighbor(numbers, selectedNumber, -1);
@@ -124,6 +125,13 @@ export function PullDetailPanel({
           </Button>
           <Button variant="secondary" disabled={!nav.next} onClick={goNext}>
             下一个
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={selectedNumber == null || loading || !org || !repo}
+            onClick={() => setReloadToken((t) => t + 1)}
+          >
+            刷新
           </Button>
         </div>
         <div className={styles.jump}>

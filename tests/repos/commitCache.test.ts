@@ -4,6 +4,7 @@ import {
   commitCacheKey,
   fetchAllCommitsCached,
   getCommitCache,
+  invalidateCommitCache,
   setCommitCache,
 } from "@/lib/repos/commitCache";
 import type { RepoCommit } from "@/lib/repos/types";
@@ -73,6 +74,47 @@ describe("commitCache", () => {
 
     expect(getCommitCache(commitCacheKey("o", "r", "dev"))).toEqual({
       commits: [commit("bbb")],
+      complete: true,
+    });
+  });
+
+  it("invalidates one branch so the next fetch hits the network", async () => {
+    const key = commitCacheKey("o", "r", "main");
+    setCommitCache(key, { commits: [commit("aaa")], complete: true });
+    invalidateCommitCache(key);
+    expect(getCommitCache(key)).toBeUndefined();
+
+    vi.mocked(fetchAllCommits).mockImplementation(async ({ onProgress }) => {
+      onProgress?.({ commits: [commit("bbb")], complete: true });
+      return [commit("bbb")];
+    });
+
+    const result = await fetchAllCommitsCached({
+      token: "t",
+      org: "o",
+      repo: "r",
+      branch: "main",
+    });
+
+    expect(fetchAllCommits).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([commit("bbb")]);
+  });
+
+  it("does not drop sibling branch caches when invalidating one branch", () => {
+    setCommitCache(commitCacheKey("o", "r", "main"), {
+      commits: [commit("aaa")],
+      complete: true,
+    });
+    setCommitCache(commitCacheKey("o", "r", "dev"), {
+      commits: [commit("ccc")],
+      complete: true,
+    });
+
+    invalidateCommitCache(commitCacheKey("o", "r", "main"));
+
+    expect(getCommitCache(commitCacheKey("o", "r", "main"))).toBeUndefined();
+    expect(getCommitCache(commitCacheKey("o", "r", "dev"))).toEqual({
+      commits: [commit("ccc")],
       complete: true,
     });
   });

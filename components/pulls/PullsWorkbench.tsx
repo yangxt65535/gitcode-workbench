@@ -220,6 +220,10 @@ export function PullsWorkbench() {
               totalPage={totalPage}
               totalCount={totalCount}
               onPageChange={setPage}
+              onRefresh={() => {
+                metaWorkspaceRef.current = null;
+                setRetryToken((t) => t + 1);
+              }}
             />
           </>
         )}
