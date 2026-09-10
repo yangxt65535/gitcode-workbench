@@ -1,7 +1,8 @@
 "use client";
 
+import type { KeyboardEvent, MouseEvent } from "react";
 import type { Issue } from "@/lib/issues/types";
-import { formatTime } from "@/lib/shared/formatTime";
+import { issueListMetaParts } from "@/lib/issues/listItemMeta";
 import styles from "./IssueListItem.module.css";
 
 type IssueListItemProps = {
@@ -15,17 +16,27 @@ export function IssueListItem({
   selected,
   onSelect,
 }: IssueListItemProps) {
-  const labelSummary = issue.labels
-    .slice(0, 3)
-    .map((l) => l.name)
-    .join(", ");
+  const metaParts = issueListMetaParts(issue);
+  const href = issue.html_url.trim();
+
+  function stop(e: MouseEvent) {
+    e.stopPropagation();
+  }
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect(issue.number);
+    }
+  }
 
   return (
-    <button
-      type="button"
+    <div
       role="listitem"
+      tabIndex={0}
       className={`row ${selected ? "rowSelected" : ""} ${styles.item}`}
       onClick={() => onSelect(issue.number)}
+      onKeyDown={onKeyDown}
     >
       <span
         className={`${styles.stateDot} ${
@@ -36,14 +47,29 @@ export function IssueListItem({
       <div className={styles.body}>
         <div className={styles.titleRow}>
           <span className={styles.number}>#{issue.number}</span>
-          <span className={styles.title}>{issue.title}</span>
+          {href ? (
+            <a
+              className={styles.title}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={stop}
+            >
+              {issue.title}
+            </a>
+          ) : (
+            <span className={styles.title}>{issue.title}</span>
+          )}
         </div>
         <div className={styles.meta}>
-          <span>{issue.state}</span>
-          {labelSummary ? <span>· {labelSummary}</span> : null}
-          <span>· {formatTime(issue.updated_at)}</span>
+          {metaParts.map((part, i) => (
+            <span key={`${part}-${i}`}>
+              {i > 0 ? " · " : null}
+              {part}
+            </span>
+          ))}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
