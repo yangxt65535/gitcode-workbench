@@ -1,10 +1,7 @@
 .item {
   width: 100%;
-  border: none;
-  background: transparent;
-  text-align: left;
-  font: inherit;
-  color: inherit;
+  cursor: pointer;
+  gap: 8px;
 }
 
 .stateDot {
@@ -49,6 +46,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a.title:hover {
+  text-decoration: underline;
 }
 
 .meta {
