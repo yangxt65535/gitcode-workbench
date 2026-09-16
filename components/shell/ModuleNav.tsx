@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/issues", label: "Issues" },
   { href: "/pulls", label: "Pulls" },
   { href: "/repos", label: "Repos" },
+  { href: "/e2e", label: "E2E" },
 ] as const;
 
 export function ModuleNav() {
