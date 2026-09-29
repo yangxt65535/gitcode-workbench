@@ -1,0 +1,23 @@
+components/ui/MultiSelect.module.css
+  s_1198cc6206b1cf::t_f99f147acd5dd3 77-98
+components/ui/MultiSelect.tsx
+  s_1198cc6206b1cf::t_0dfeb39acc5a41 30
+  s_1198cc6206b1cf::t_f00e2dd9b71b02 62
+  s_1198cc6206b1cf::t_cf45b24c0da6a1 104-108,130-137,146-147,149
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "62b9cff104dfbd2e23633a7ef171c909f41d149e",
+  "prompts": {},
+  "sessions": {
+    "s_1198cc6206b1cf": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f1427f740ffemrlAi3JBTXvqZG",
+        "model": "glm-5.3"
+      },
+      "human_author": "yangxt65535 <yangxuting1@h-partners.com>"
+    }
+  }
+}
