@@ -27,6 +27,7 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string[]>(value);
+  const [search, setSearch] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
@@ -58,6 +59,7 @@ export function MultiSelect({
   function openPanel() {
     if (disabled) return;
     setDraft([...value]);
+    setSearch("");
     setOpen(true);
   }
 
@@ -99,6 +101,11 @@ export function MultiSelect({
         ? value.join(", ")
         : `已选 ${value.length} 项`;
 
+  const keyword = search.trim().toLowerCase();
+  const visibleOptions = keyword
+    ? options.filter((option) => option.toLowerCase().includes(keyword))
+    : options;
+
   return (
     <div className={styles.root} ref={rootRef}>
       <span className={styles.label}>{label}</span>
@@ -120,6 +127,14 @@ export function MultiSelect({
         className={`${styles.panel} ${open ? styles.panelOpen : ""}`}
         hidden={!open}
       >
+        <input
+          type="text"
+          className={styles.search}
+          placeholder={`搜索${label}…`}
+          value={search}
+          disabled={disabled}
+          onChange={(event) => setSearch(event.target.value)}
+        />
         <div
           id={listId}
           role="listbox"
@@ -128,8 +143,10 @@ export function MultiSelect({
         >
           {options.length === 0 ? (
             <div className={styles.emptyOptions}>暂无选项</div>
+          ) : visibleOptions.length === 0 ? (
+            <div className={styles.emptyOptions}>无匹配选项</div>
           ) : (
-            options.map((option) => {
+            visibleOptions.map((option) => {
               const checked = draft.includes(option);
               return (
                 <label key={option} className={styles.option}>

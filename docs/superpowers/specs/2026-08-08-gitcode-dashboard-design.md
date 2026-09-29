@@ -153,6 +153,8 @@ tests/dashboard/
 - **PR**：选定仓分别拉取后客户端合并 → `queryLogic` 排序/筛选 → `slice` 分页（避免跨仓页码错乱）
 - 默认每页 20
 
+> **行为变更（2026-09 渐进式加载改造）**：上述「全量拉取再客户端分页」已改为渐进流——首屏每数据流只拉 1 页 × `ORG_LIST_PER_PAGE`(20)，后台逐页补齐；翻页经 `ensureDisplayPage` 换算成服务器页按需补拉（流内按序、流间并行）。实现见 `lib/dashboard/useProgressiveStreams.ts` 与 `progressiveList.ts`，单页 fetcher 为 `fetchOrgUserIssuesPage` / `fetchOrgUserPullsPage`。补齐完成前分页栏总数显示「N+」；Issue「创建 ∪ 负责」为两个流去重合并（前流优先）。
+
 ### 6.5 测试
 
 - 纯函数：`queryLogic`、关联 key 匹配、单 PR meta 合并

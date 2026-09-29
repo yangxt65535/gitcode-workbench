@@ -10,11 +10,13 @@ type PullListProps = {
   onSelect: (number: number) => void;
   loading?: boolean;
   page: number;
-  perPage: number;
-  totalPage: number | null;
-  totalCount: number | null;
+  totalPage: number;
+  totalCount: number;
+  countApprox: boolean;
+  hasMore: boolean;
+  disabled: boolean;
+  loadingMore: boolean;
   onPageChange: (page: number) => void;
-  onRefresh?: () => void;
 };
 
 export function PullList({
@@ -23,11 +25,13 @@ export function PullList({
   onSelect,
   loading,
   page,
-  perPage,
   totalPage,
   totalCount,
+  countApprox,
+  hasMore,
+  disabled,
+  loadingMore,
   onPageChange,
-  onRefresh,
 }: PullListProps) {
   return (
     <PagedEntityList
@@ -35,11 +39,13 @@ export function PullList({
       emptyHint="当前筛选条件下暂无 PR"
       itemCount={items.length}
       page={page}
-      perPage={perPage}
       totalPage={totalPage}
       totalCount={totalCount}
+      countApprox={countApprox}
+      hasMore={hasMore}
+      disabled={disabled}
+      loadingMore={loadingMore}
       onPageChange={onPageChange}
-      onRefresh={onRefresh}
     >
       {items.map((pull) => (
         <PullListItem

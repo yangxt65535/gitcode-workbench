@@ -33,6 +33,8 @@ type IssueFiltersProps = {
   meta: IssueMeta | null;
   value: IssueFiltersValue;
   onChange: (next: IssueFiltersValue) => void;
+  /** 点击「确认」时除应用搜索外，同时刷新列表。 */
+  onReload?: () => void;
   disabled?: boolean;
 };
 
@@ -40,6 +42,7 @@ export function IssueFilters({
   meta,
   value,
   onChange,
+  onReload,
   disabled,
 }: IssueFiltersProps) {
   const [searchDraft, setSearchDraft] = useState(value.search);
@@ -98,7 +101,10 @@ export function IssueFilters({
             <Button
               variant="primary"
               disabled={disabled}
-              onClick={applySearch}
+              onClick={() => {
+                applySearch();
+                onReload?.();
+              }}
             >
               确认
             </Button>

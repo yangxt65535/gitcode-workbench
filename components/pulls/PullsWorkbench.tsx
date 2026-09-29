@@ -6,8 +6,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { GitCodeHttpError } from "@/lib/gitcode/client";
+import { useProgressiveStreams } from "@/lib/dashboard/useProgressiveStreams";
 import { GitCodePullRepository } from "@/lib/pulls/gitcodePullRepository";
-import type { Pull, PullMeta } from "@/lib/pulls/types";
+import { LIST_MAX_PAGES, type Pull, type PullMeta } from "@/lib/pulls/types";
 import { isConfirmedRepoListReady } from "@/lib/workspace/listReady";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { RepoConfirmBar } from "@/components/issues/RepoConfirmBar";
@@ -20,7 +21,7 @@ import { PullList } from "./PullList";
 import { PullDetailPanel } from "./PullDetailPanel";
 import styles from "@/components/workbench/WorkbenchLayout.module.css";
 
-const DEFAULT_PER_PAGE = 20;
+const PER_PAGE = 20;
 
 export function PullsWorkbench() {
   const { org, repo, repoConfirmed } = useWorkspace();
@@ -31,15 +32,11 @@ export function PullsWorkbench() {
 
   const [filters, setFilters] = useState<PullFiltersValue>(DEFAULT_PULL_FILTERS);
   const [page, setPage] = useState(1);
-  const [items, setItems] = useState<Pull[]>([]);
-  const [totalPage, setTotalPage] = useState<number | null>(null);
-  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [meta, setMeta] = useState<PullMeta | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
   const [boundWorkspace, setBoundWorkspace] = useState(workspaceKey);
-  const [retryToken, setRetryToken] = useState(0);
+  const [metaReloadToken, setMetaReloadToken] = useState(0);
   const metaWorkspaceRef = useRef<string | null>(null);
 
   if (boundWorkspace !== workspaceKey) {
@@ -48,119 +45,81 @@ export function PullsWorkbench() {
     setPage(1);
     setSelectedNumber(null);
     setMeta(null);
-    setItems([]);
-    setTotalPage(null);
-    setTotalCount(null);
     setError(null);
     metaWorkspaceRef.current = null;
   }
+
+  const listQuery = useMemo(
+    () => ({
+      org: org.trim(),
+      repo: repo.trim(),
+      state: filters.state,
+      creator: filters.creator,
+      base: filters.base,
+      label: filters.label,
+      milestone: filters.milestone,
+      search: filters.search.trim() || undefined,
+      sort: filters.sort,
+      direction: filters.direction,
+    }),
+    [org, repo, filters],
+  );
+
+  const stream = useProgressiveStreams<Pull>({
+    queryKey: ready && authed ? JSON.stringify([workspaceKey, filters]) : null,
+    enabled: authReady && authed && ready,
+    streams: ["pulls"],
+    serverPerPage: PER_PAGE,
+    displayPageSize: PER_PAGE,
+    maxServerPages: LIST_MAX_PAGES,
+    background: true,
+    fetchPage: (_stream, pageNumber, signal) => {
+      const repository = new GitCodePullRepository(token ?? "");
+      return repository.fetchPage(listQuery, pageNumber, PER_PAGE, signal);
+    },
+    getKey: (item) => String(item.number),
+    onUnauthorized: clearSession,
+  });
+
+  // meta 与列表独立：标签/里程碑/创建者选项只随 workspace 或手动刷新重拉
+  useEffect(() => {
+    if (!authReady || !authed || !ready || !token) return;
+    const ac = new AbortController();
+    const o = org.trim();
+    const r = repo.trim();
+    if (metaWorkspaceRef.current === `${o}\0${r}`) return;
+    const repository = new GitCodePullRepository(token);
+    repository
+      .meta(o, r)
+      .then((metaJson) => {
+        if (ac.signal.aborted) return;
+        metaWorkspaceRef.current = `${o}\0${r}`;
+        setMeta(metaJson);
+      })
+      .catch((err: unknown) => {
+        if (ac.signal.aborted) return;
+        if (err instanceof GitCodeHttpError && err.status === 401) {
+          clearSession();
+          setError("Token 无效，请重新配置");
+        }
+      });
+    return () => ac.abort();
+  }, [authReady, authed, ready, workspaceKey, metaReloadToken, org, repo, token, clearSession]);
 
   function handleFiltersChange(next: PullFiltersValue) {
     setFilters(next);
     setPage(1);
   }
 
-  useEffect(() => {
-    if (!authReady) return;
+  /** 筛选区「确认」兼刷新：强制重拉列表与 meta。 */
+  function handleReload() {
+    setPage(1);
+    metaWorkspaceRef.current = null;
+    setMetaReloadToken((t) => t + 1);
+    stream.reload();
+  }
 
-    if (!authed || !token) {
-      setLoading(false);
-      setItems([]);
-      setMeta(null);
-      setTotalPage(null);
-      setTotalCount(null);
-      setError(null);
-      metaWorkspaceRef.current = null;
-      return;
-    }
-
-    if (!ready) {
-      setLoading(false);
-      setItems([]);
-      setMeta(null);
-      setTotalPage(null);
-      setTotalCount(null);
-      setError(null);
-      metaWorkspaceRef.current = null;
-      return;
-    }
-
-    const ac = new AbortController();
-    const o = org.trim();
-    const r = repo.trim();
-    const needMeta = metaWorkspaceRef.current !== workspaceKey;
-    const repository = new GitCodePullRepository(token);
-
-    async function run() {
-      setLoading(true);
-      setError(null);
-      try {
-        const listQuery = {
-          org: o,
-          repo: r,
-          state: filters.state,
-          creator: filters.creator,
-          base: filters.base,
-          label: filters.label,
-          milestone: filters.milestone,
-          search: filters.search.trim() || undefined,
-          sort: filters.sort,
-          direction: filters.direction,
-          page,
-          per_page: DEFAULT_PER_PAGE,
-        };
-
-        if (needMeta) {
-          const [metaJson, listJson] = await Promise.all([
-            repository.meta(o, r),
-            repository.list(listQuery),
-          ]);
-          if (ac.signal.aborted) return;
-          metaWorkspaceRef.current = workspaceKey;
-          setMeta(metaJson);
-          setItems(listJson.items ?? []);
-          setTotalPage(listJson.total_page);
-          setTotalCount(listJson.total_count);
-        } else {
-          const listJson = await repository.list(listQuery);
-          if (ac.signal.aborted) return;
-          setItems(listJson.items ?? []);
-          setTotalPage(listJson.total_page);
-          setTotalCount(listJson.total_count);
-        }
-      } catch (err) {
-        if (ac.signal.aborted) return;
-        if (err instanceof GitCodeHttpError && err.status === 401) {
-          clearSession();
-          setError("Token 无效，请重新配置");
-        } else {
-          setError(err instanceof Error ? err.message : "加载失败");
-        }
-        setItems([]);
-        setTotalPage(null);
-        setTotalCount(null);
-      } finally {
-        if (!ac.signal.aborted) setLoading(false);
-      }
-    }
-
-    void run();
-    return () => ac.abort();
-  }, [
-    authReady,
-    authed,
-    ready,
-    workspaceKey,
-    filters,
-    page,
-    retryToken,
-    org,
-    repo,
-    token,
-    clearSession,
-  ]);
-
-  const numbers = useMemo(() => items.map((p) => p.number), [items]);
+  const numbers = useMemo(() => stream.items.map((i) => i.number), [stream.items]);
 
   if (!authReady) {
     return (
@@ -178,10 +137,14 @@ export function PullsWorkbench() {
     );
   }
 
+  const bannerError = error ?? stream.error;
+  const pagerDisabled = stream.initialLoading || stream.loadingMore;
+  const pageItems = stream.items.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
   return (
     <div className={styles.root}>
       <div className={styles.left}>
-        <RepoConfirmBar disabled={loading} retainStoredRepo={repoConfirmed} />
+        <RepoConfirmBar retainStoredRepo={repoConfirmed} />
         {!ready ? (
           <div className={styles.leftEmpty}>
             <EmptyState>请填写组织和仓库并确认</EmptyState>
@@ -192,37 +155,33 @@ export function PullsWorkbench() {
               meta={meta}
               value={filters}
               onChange={handleFiltersChange}
-              disabled={loading}
+              onReload={handleReload}
             />
-            {error ? (
+            {bannerError ? (
               <ErrorBanner
-                message={error}
+                message={bannerError}
                 action={
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      metaWorkspaceRef.current = null;
-                      setRetryToken((t) => t + 1);
-                    }}
-                  >
+                  <Button variant="secondary" onClick={handleReload}>
                     重试
                   </Button>
                 }
               />
             ) : null}
             <PullList
-              items={items}
+              items={pageItems}
               selectedNumber={selectedNumber}
               onSelect={setSelectedNumber}
-              loading={loading && !error}
+              loading={stream.initialLoading}
               page={page}
-              perPage={DEFAULT_PER_PAGE}
-              totalPage={totalPage}
-              totalCount={totalCount}
-              onPageChange={setPage}
-              onRefresh={() => {
-                metaWorkspaceRef.current = null;
-                setRetryToken((t) => t + 1);
+              totalPage={Math.max(1, Math.ceil(stream.items.length / PER_PAGE))}
+              totalCount={stream.items.length}
+              countApprox={!stream.exhausted}
+              hasMore={!stream.exhausted}
+              disabled={pagerDisabled}
+              loadingMore={stream.loadingMore}
+              onPageChange={(next) => {
+                setPage(next);
+                stream.ensureDisplayPage(next);
               }}
             />
           </>
@@ -232,7 +191,7 @@ export function PullsWorkbench() {
         <PullDetailPanel
           org={org.trim()}
           repo={repo.trim()}
-          numbers={loading || !ready ? [] : numbers}
+          numbers={stream.initialLoading || !ready ? [] : numbers}
           selectedNumber={selectedNumber}
           onSelect={setSelectedNumber}
         />

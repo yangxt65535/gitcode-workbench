@@ -33,6 +33,8 @@ type PullFiltersProps = {
   meta: PullMeta | null;
   value: PullFiltersValue;
   onChange: (next: PullFiltersValue) => void;
+  /** 点击「确认」时除应用搜索外，同时刷新列表。 */
+  onReload?: () => void;
   disabled?: boolean;
 };
 
@@ -40,6 +42,7 @@ export function PullFilters({
   meta,
   value,
   onChange,
+  onReload,
   disabled,
 }: PullFiltersProps) {
   const [searchDraft, setSearchDraft] = useState(value.search);
@@ -98,7 +101,10 @@ export function PullFilters({
             <Button
               variant="primary"
               disabled={disabled}
-              onClick={applySearch}
+              onClick={() => {
+                applySearch();
+                onReload?.();
+              }}
             >
               确认
             </Button>

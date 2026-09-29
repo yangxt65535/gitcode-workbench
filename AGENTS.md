@@ -34,7 +34,7 @@ lib/
   auth/                 # AuthContext + localStorage
   workspace/            # WorkspaceContext + org/repo localStorage
   gitcode/              # fetchGitCode、map*、fetch*Detail、fetchRepoData、fetchOrg*
-  dashboard/            # Dashboard 类型、queryLogic、关联 key、PR meta 合并
+  dashboard/            # Dashboard 类型、queryLogic、渐进流（useProgressiveStreams）、关联 key、PR meta 合并
   issues/ pulls/ repos/ # 领域类型、queryLogic、Repository（如有）
 tests/                  # 与 lib/ 镜像的单元测试
 docs/superpowers/       # 设计文档与实现计划（参考用，非运行时依赖）
@@ -56,7 +56,7 @@ lib/{module}/gitcode*Repository.ts  → 列表分页与 meta 拉取（Issues、P
 
 **Repos 例外**：无 Repository 层，Workbench 直接调用 `lib/gitcode/fetchRepoData.ts` 与 `lib/repos/commitDiff.ts`。
 
-**Dashboard 例外**：组织级双栏（左 Issue / 右 PR）；无详情面板。Issue 为企业级「我创建的 ∪ 我负责的」（`creator` / `assignee`，可筛一类）；PR 为 `author`。顶栏组织+仓库同一行输入。选中后对侧只显示关联项；行内可刷新 state/labels。
+**Dashboard 例外**：组织级双栏（左 Issue / 右 PR）；无详情面板。Issue 为企业级「我创建的 ∪ 我负责的」（`creator` / `assignee`，可筛一类）；PR 为 `author`。顶栏组织+仓库同一行输入。选中后对侧只显示关联项；行内可刷新 state/labels。列表走**渐进流**（`lib/dashboard/useProgressiveStreams.ts`）：首屏每流只拉 1 页 × `ORG_LIST_PER_PAGE`(20)，后台逐页补齐；翻页经 `ensureDisplayPage` 按需补拉；补齐前总数显示「N+」。单页 fetcher 为 `fetchOrgUserIssuesPage` / `fetchOrgUserPullsPage`。
 
 ### 共享上下文
 
@@ -87,7 +87,7 @@ mapGitCodeIssue / mapGitCodePull / mapGitCodeCommit / mapGitCodeComment
 ```
 
 - 新增 API 调用：在 `lib/gitcode/` 添加 fetch/map，**不要**在组件内拼 URL。
-- Issue/PR 列表：`total_count` / `total_page` 响应头常被 CORS 隐藏，Repository 内有 totals 探测与缓存逻辑，修改分页时须读 `gitcodeIssueRepository.ts` / `gitcodePullRepository.ts`。
+- Issue/PR 列表：`total_count` / `total_page` 响应头常被 CORS 隐藏。Repository 接口为 `fetchPage(query, page, perPage, signal)` 单页拉取（返回 `{items, rawCount, perPage, capped}`），Workbench 经 `useProgressiveStreams` 渐进加载：首屏 1 页先渲染，后台逐页补齐，总数/总页随条数递增直到 exhausted；`capped`（达 `LIST_MAX_PAGES`(50) 仍满页）表示被截断。分页 UI 统一用 `components/workbench/EntityPager.tsx`，请求中禁用全部控件；列表刷新合并到筛选区确认按钮（`IssueFilters`/`PullFilters` 的 `onReload`）。修改分页时须读 `gitcodeIssueRepository.ts` / `gitcodePullRepository.ts`。
 - Repos commit：`fetchAllCommits()` 最多 50 页 × 100 条；展示分页用 `sliceCommitPage()`。
 - Repos commit 缓存：`lib/repos/commitCache.ts`，按 `org/repo/branch` 内存缓存；每个仓库（主仓 / Fork 各自独立）最多保留 **3 个分支**（LRU）；切换 workspace 时 `clearCommitCache()`。
 

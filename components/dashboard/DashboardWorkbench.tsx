@@ -6,8 +6,8 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { GitCodeHttpError } from "@/lib/gitcode/client";
 import { fetchIssueRelatedPulls } from "@/lib/gitcode/fetchIssueRelatedPulls";
-import { fetchOrgUserIssues } from "@/lib/gitcode/fetchOrgUserIssues";
-import { fetchOrgUserPulls } from "@/lib/gitcode/fetchOrgUserPulls";
+import { fetchOrgUserIssuesPage } from "@/lib/gitcode/fetchOrgUserIssues";
+import { fetchOrgUserPullsPage } from "@/lib/gitcode/fetchOrgUserPulls";
 import { fetchPullRelatedIssues } from "@/lib/gitcode/fetchPullRelatedIssues";
 import { refreshIssueMeta } from "@/lib/gitcode/refreshIssueMeta";
 import { refreshPullMeta } from "@/lib/gitcode/refreshPullMeta";
@@ -24,12 +24,16 @@ import { relatedKeysFromLinks } from "@/lib/dashboard/relatedKeys";
 import {
   DEFAULT_ISSUE_PANE_FILTERS,
   DEFAULT_PANE_FILTERS,
+  MAX_ISSUES_PAGES,
+  MAX_PULL_PAGES_PER_REPO,
+  ORG_LIST_PER_PAGE,
   PAGE_SIZE,
   type DashboardIssue,
   type DashboardPaneFilters,
   type DashboardPull,
   type DashboardSelection,
 } from "@/lib/dashboard/types";
+import { useProgressiveStreams } from "@/lib/dashboard/useProgressiveStreams";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { DashboardPane } from "./DashboardPane";
 import { OrgConfirmBar } from "./OrgConfirmBar";
@@ -61,13 +65,8 @@ export function DashboardWorkbench() {
   );
   const [pullFilters, setPullFilters] =
     useState<DashboardPaneFilters>(DEFAULT_PANE_FILTERS);
-  const [issueRaw, setIssueRaw] = useState<DashboardIssue[]>([]);
-  const [pullRaw, setPullRaw] = useState<DashboardPull[]>([]);
   const [issuePage, setIssuePage] = useState(1);
   const [pullPage, setPullPage] = useState(1);
-  const [issueLoading, setIssueLoading] = useState(false);
-  const [pullLoading, setPullLoading] = useState(false);
-  const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selection, setSelection] = useState<DashboardSelection | null>(null);
   const [relatedKeys, setRelatedKeys] = useState<Set<string>>(
@@ -80,19 +79,14 @@ export function DashboardWorkbench() {
   const [pullRefreshingKey, setPullRefreshingKey] = useState<string | null>(
     null,
   );
-  const [issueReloadToken, setIssueReloadToken] = useState(0);
-  const [pullReloadToken, setPullReloadToken] = useState(0);
 
   if (boundOrg !== orgKey) {
     setBoundOrg(orgKey);
     setRepoFilter("");
     setIssueFilters(DEFAULT_ISSUE_PANE_FILTERS);
     setPullFilters(DEFAULT_PANE_FILTERS);
-    setIssueRaw([]);
-    setPullRaw([]);
     setIssuePage(1);
     setPullPage(1);
-    setWarnings([]);
     setError(null);
     setSelection(null);
     setRelatedKeys(new Set());
@@ -113,9 +107,74 @@ export function DashboardWorkbench() {
   const pullSort = pullFilters.sort;
   const pullDirection = pullFilters.direction;
 
+  const streamsEnabled = authReady && authed && ready;
+
+  const issueStream = useProgressiveStreams<DashboardIssue>({
+    queryKey: JSON.stringify([
+      orgKey,
+      issueInvolvement,
+      issueStateParam,
+      issueSort,
+      issueDirection,
+    ]),
+    enabled: streamsEnabled,
+    streams:
+      issueInvolvement === "all"
+        ? ["created", "assigned"]
+        : [issueInvolvement],
+    serverPerPage: ORG_LIST_PER_PAGE,
+    displayPageSize: PAGE_SIZE,
+    maxServerPages: MAX_ISSUES_PAGES,
+    background: true,
+    fetchPage: (stream, page, signal) =>
+      fetchOrgUserIssuesPage({
+        token: token!,
+        org: orgKey,
+        username: username!,
+        involvement: stream === "assigned" ? "assigned" : "created",
+        state: issueStateParam,
+        sort: issueSort,
+        direction: issueDirection,
+        page,
+        perPage: ORG_LIST_PER_PAGE,
+        signal,
+      }),
+    getKey: (item) => itemKey(item.repo, item.number),
+    onUnauthorized: clearSession,
+  });
+
+  const pullStream = useProgressiveStreams<DashboardPull>({
+    queryKey: JSON.stringify([
+      orgKey,
+      pullStateParam,
+      pullSort,
+      pullDirection,
+    ]),
+    enabled: streamsEnabled,
+    streams: ["author"],
+    serverPerPage: ORG_LIST_PER_PAGE,
+    displayPageSize: PAGE_SIZE,
+    maxServerPages: MAX_PULL_PAGES_PER_REPO,
+    background: true,
+    fetchPage: (_stream, page, signal) =>
+      fetchOrgUserPullsPage({
+        token: token!,
+        org: orgKey,
+        username: username!,
+        state: pullStateParam,
+        sort: pullSort,
+        direction: pullDirection,
+        page,
+        perPage: ORG_LIST_PER_PAGE,
+        signal,
+      }),
+    getKey: (item) => itemKey(item.repo, item.number),
+    onUnauthorized: clearSession,
+  });
+
   const filteredIssues = useMemo(() => {
     let filtered = filterDashboardItems(
-      issueRaw,
+      issueStream.items,
       issueFilters,
       selectedRepos,
     );
@@ -127,11 +186,11 @@ export function DashboardWorkbench() {
       issueFilters.sort,
       issueFilters.direction,
     );
-  }, [issueRaw, issueFilters, selectedRepos, selection, relatedKeys]);
+  }, [issueStream.items, issueFilters, selectedRepos, selection, relatedKeys]);
 
   const filteredPulls = useMemo(() => {
     let filtered = filterDashboardItems(
-      pullRaw,
+      pullStream.items,
       pullFilters,
       selectedRepos,
     );
@@ -143,140 +202,69 @@ export function DashboardWorkbench() {
       pullFilters.sort,
       pullFilters.direction,
     );
-  }, [pullRaw, pullFilters, selectedRepos, selection, relatedKeys]);
+  }, [pullStream.items, pullFilters, selectedRepos, selection, relatedKeys]);
 
-  const issueTotalPage = Math.max(
+  const issueLoadedPageCount = Math.max(
     1,
-    Math.ceil(filteredIssues.length / PAGE_SIZE) || 1,
+    Math.ceil(filteredIssues.length / PAGE_SIZE),
   );
-  const pullTotalPage = Math.max(
+  const pullLoadedPageCount = Math.max(
     1,
-    Math.ceil(filteredPulls.length / PAGE_SIZE) || 1,
+    Math.ceil(filteredPulls.length / PAGE_SIZE),
   );
+  const issueTotalPage = issueLoadedPageCount;
+  const pullTotalPage = pullLoadedPageCount;
+  const issueCountApprox = !issueStream.exhausted || issueStream.capped;
+  const pullCountApprox = !pullStream.exhausted || pullStream.capped;
 
   const issuePageItems = slicePage(filteredIssues, issuePage, PAGE_SIZE);
   const pullPageItems = slicePage(filteredPulls, pullPage, PAGE_SIZE);
 
-  const issueLabels = useMemo(() => collectLabels(issueRaw), [issueRaw]);
-  const pullLabels = useMemo(() => collectLabels(pullRaw), [pullRaw]);
+  const issueLabels = useMemo(
+    () => collectLabels(issueStream.items),
+    [issueStream.items],
+  );
+  const pullLabels = useMemo(
+    () => collectLabels(pullStream.items),
+    [pullStream.items],
+  );
+
+  // 仅在加载完毕后收敛页码；渐进加载中估计页数会递增，不能 clamp
+  useEffect(() => {
+    if (issueStream.exhausted && issuePage > issueTotalPage) {
+      setIssuePage(issueTotalPage);
+    }
+  }, [issuePage, issueTotalPage, issueStream.exhausted]);
 
   useEffect(() => {
-    if (issuePage > issueTotalPage) setIssuePage(issueTotalPage);
-  }, [issuePage, issueTotalPage]);
+    if (pullStream.exhausted && pullPage > pullTotalPage) {
+      setPullPage(pullTotalPage);
+    }
+  }, [pullPage, pullTotalPage, pullStream.exhausted]);
 
+  // Related links on selection — opposite pane lists only related items.
+  // Also accelerate loading the opposite pane so the relation filter is
+  // computed over the full dataset.
+  const {
+    exhausted: issuesExhausted,
+    ensureAll: ensureAllIssues,
+  } = issueStream;
   useEffect(() => {
-    if (pullPage > pullTotalPage) setPullPage(pullTotalPage);
-  }, [pullPage, pullTotalPage]);
+    if (selection?.side === "pull" && !issuesExhausted) {
+      ensureAllIssues();
+    }
+  }, [selection, issuesExhausted, ensureAllIssues]);
 
-  // Load issues (enterprise list + creator)
+  const {
+    exhausted: pullsExhausted,
+    ensureAll: ensureAllPulls,
+  } = pullStream;
   useEffect(() => {
-    if (!authReady || !authed || !token || !username || !ready) {
-      setIssueRaw([]);
-      setIssueLoading(false);
-      return;
+    if (selection?.side === "issue" && !pullsExhausted) {
+      ensureAllPulls();
     }
+  }, [selection, pullsExhausted, ensureAllPulls]);
 
-    const ac = new AbortController();
-    async function run() {
-      setIssueLoading(true);
-      setError(null);
-      try {
-        const items = await fetchOrgUserIssues({
-          token: token!,
-          org: orgKey,
-          username: username!,
-          involvement: issueInvolvement,
-          state: issueStateParam,
-          sort: issueSort,
-          direction: issueDirection,
-          signal: ac.signal,
-        });
-        if (!ac.signal.aborted) setIssueRaw(items);
-      } catch (err) {
-        if (ac.signal.aborted) return;
-        if (err instanceof GitCodeHttpError && err.status === 401) {
-          clearSession();
-          setError("登录已失效，请重新配置 Token");
-        } else {
-          setError(err instanceof Error ? err.message : "加载 Issues 失败");
-        }
-        setIssueRaw([]);
-      } finally {
-        if (!ac.signal.aborted) setIssueLoading(false);
-      }
-    }
-    void run();
-    return () => ac.abort();
-  }, [
-    authReady,
-    authed,
-    token,
-    username,
-    ready,
-    orgKey,
-    issueInvolvement,
-    issueStateParam,
-    issueSort,
-    issueDirection,
-    issueReloadToken,
-    clearSession,
-  ]);
-
-  // Load pulls (enterprise list + author; no per-repo fan-out)
-  useEffect(() => {
-    if (!authReady || !authed || !token || !username || !ready) {
-      setPullRaw([]);
-      setPullLoading(false);
-      return;
-    }
-
-    const ac = new AbortController();
-    async function run() {
-      setPullLoading(true);
-      setWarnings([]);
-      try {
-        const result = await fetchOrgUserPulls({
-          token: token!,
-          org: orgKey,
-          username: username!,
-          state: pullStateParam,
-          sort: pullSort,
-          direction: pullDirection,
-          signal: ac.signal,
-        });
-        if (ac.signal.aborted) return;
-        setPullRaw(result.items);
-        setWarnings(result.warnings);
-      } catch (err) {
-        if (ac.signal.aborted) return;
-        if (err instanceof GitCodeHttpError && err.status === 401) {
-          clearSession();
-          setError("登录已失效，请重新配置 Token");
-        } else {
-          setError(err instanceof Error ? err.message : "加载 PRs 失败");
-        }
-        setPullRaw([]);
-      } finally {
-        if (!ac.signal.aborted) setPullLoading(false);
-      }
-    }
-    void run();
-    return () => ac.abort();
-  }, [
-    authReady,
-    authed,
-    token,
-    username,
-    ready,
-    orgKey,
-    pullStateParam,
-    pullSort,
-    pullDirection,
-    pullReloadToken,
-    clearSession,
-  ]);
-
-  // Related links on selection — opposite pane lists only related items
   useEffect(() => {
     if (!selection || !token || !orgKey) {
       setRelatedKeys(new Set());
@@ -344,6 +332,9 @@ export function DashboardWorkbench() {
     setRepoFilter(repo);
     setIssuePage(1);
     setPullPage(1);
+    // 确认兼刷新：值未变时 queryKey 不动，这里强制重拉
+    issueStream.reload();
+    pullStream.reload();
   }
 
   function toggleSelect(
@@ -375,7 +366,7 @@ export function DashboardWorkbench() {
         repo: item.repo,
         number: item.number,
       });
-      setIssueRaw((prev) =>
+      issueStream.updateItems((prev) =>
         prev.map((i) =>
           i.repo === item.repo && i.number === item.number
             ? mergeDashboardMeta(i, patch)
@@ -405,7 +396,7 @@ export function DashboardWorkbench() {
         repo: item.repo,
         number: item.number,
       });
-      setPullRaw((prev) =>
+      pullStream.updateItems((prev) =>
         prev.map((p) =>
           p.repo === item.repo && p.number === item.number
             ? mergeDashboardMeta(p, patch)
@@ -440,10 +431,11 @@ export function DashboardWorkbench() {
     );
   }
 
+  const bannerMessage = error ?? issueStream.error ?? pullStream.error;
+
   return (
     <div className={styles.root}>
       <OrgConfirmBar
-        disabled={issueLoading || pullLoading}
         repo={repoFilter}
         onConfirmRepo={handleConfirmRepo}
       />
@@ -453,13 +445,7 @@ export function DashboardWorkbench() {
         </div>
       ) : (
         <>
-          {error ? <ErrorBanner message={error} /> : null}
-          {warnings.length > 0 ? (
-            <div className={styles.warnings}>
-              部分仓库加载失败：{warnings.slice(0, 3).join("；")}
-              {warnings.length > 3 ? ` 等 ${warnings.length} 项` : ""}
-            </div>
-          ) : null}
+          {bannerMessage ? <ErrorBanner message={bannerMessage} /> : null}
           <div className={styles.panes}>
             <DashboardPane
               side="issue"
@@ -469,13 +455,24 @@ export function DashboardWorkbench() {
               onFiltersChange={handleIssueFiltersChange}
               items={issuePageItems}
               loading={
-                issueLoading ||
+                issueStream.initialLoading ||
                 (selection?.side === "pull" && relatedLoading)
               }
               page={issuePage}
               totalPage={issueTotalPage}
               totalCount={filteredIssues.length}
-              onPageChange={setIssuePage}
+              countApprox={issueCountApprox}
+              hasMore={!issueStream.exhausted}
+              pagerDisabled={
+                issueStream.initialLoading || issueStream.loadingMore
+              }
+              loadingMore={
+                issueStream.loadingMore && !issueStream.initialLoading
+              }
+              onPageChange={(next) => {
+                setIssuePage(next);
+                issueStream.ensureDisplayPage(next);
+              }}
               selection={selection}
               onSelect={(item) => toggleSelect("issue", item)}
               onRefresh={handleRefreshIssue}
@@ -486,9 +483,10 @@ export function DashboardWorkbench() {
               emptyHint={
                 selection?.side === "pull"
                   ? "当前筛选下暂无关联 Issue"
-                  : "当前筛选条件下暂无 Issue"
+                  : !issueStream.exhausted
+                    ? "暂无匹配数据，仍在加载更多…"
+                    : "当前筛选条件下暂无 Issue"
               }
-              onReload={() => setIssueReloadToken((t) => t + 1)}
             />
             <div className={styles.divider} />
             <DashboardPane
@@ -499,13 +497,24 @@ export function DashboardWorkbench() {
               onFiltersChange={handlePullFiltersChange}
               items={pullPageItems}
               loading={
-                pullLoading ||
+                pullStream.initialLoading ||
                 (selection?.side === "issue" && relatedLoading)
               }
               page={pullPage}
               totalPage={pullTotalPage}
               totalCount={filteredPulls.length}
-              onPageChange={setPullPage}
+              countApprox={pullCountApprox}
+              hasMore={!pullStream.exhausted}
+              pagerDisabled={
+                pullStream.initialLoading || pullStream.loadingMore
+              }
+              loadingMore={
+                pullStream.loadingMore && !pullStream.initialLoading
+              }
+              onPageChange={(next) => {
+                setPullPage(next);
+                pullStream.ensureDisplayPage(next);
+              }}
               selection={selection}
               onSelect={(item) => toggleSelect("pull", item)}
               onRefresh={handleRefreshPull}
@@ -516,9 +525,10 @@ export function DashboardWorkbench() {
               emptyHint={
                 selection?.side === "issue"
                   ? "当前筛选下暂无关联 PR"
-                  : "当前筛选条件下暂无 PR"
+                  : !pullStream.exhausted
+                    ? "暂无匹配数据，仍在加载更多…"
+                    : "当前筛选条件下暂无 PR"
               }
-              onReload={() => setPullReloadToken((t) => t + 1)}
             />
           </div>
         </>

@@ -49,6 +49,8 @@ export const DEFAULT_ISSUE_PANE_FILTERS: DashboardPaneFilters = {
 };
 
 export const PAGE_SIZE = 20;
+/** 企业级 Issue/PR 流的每页条数（服务端排序，前端按 PAGE_SIZE 展示分页）。 */
+export const ORG_LIST_PER_PAGE = 20;
 export const PULL_FETCH_CONCURRENCY = 5;
-export const MAX_ISSUES_PAGES = 20;
-export const MAX_PULL_PAGES_PER_REPO = 10;
+export const MAX_ISSUES_PAGES = 100;
+export const MAX_PULL_PAGES_PER_REPO = 50;

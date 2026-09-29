@@ -56,14 +56,6 @@ export interface IssueQuery {
   per_page?: number;
 }
 
-export interface IssueListPage {
-  items: Issue[];
-  page: number;
-  per_page: number;
-  total_count: number | null;
-  total_page: number | null;
-}
-
 export interface IssueMeta {
   states: string[];
   creators: string[];
@@ -72,7 +64,23 @@ export interface IssueMeta {
   milestones: string[];
 }
 
+/** 渐进式加载的单页结果；rawCount/capped 用于终止与页数上限判定。 */
+export interface IssueStreamPage {
+  items: Issue[];
+  rawCount: number;
+  perPage: number;
+  capped: boolean;
+}
+
+/** 单仓列表渐进补齐的服务器页数上限（50 页 × 20 条）。 */
+export const LIST_MAX_PAGES = 50;
+
 export interface IssueRepository {
-  list(query: IssueQuery): Promise<IssueListPage>;
+  fetchPage(
+    query: IssueQuery,
+    page: number,
+    perPage: number,
+    signal?: AbortSignal,
+  ): Promise<IssueStreamPage>;
   meta(org: string, repo: string): Promise<IssueMeta>;
 }

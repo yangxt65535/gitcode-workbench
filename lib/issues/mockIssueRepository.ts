@@ -4,47 +4,33 @@ import {
   matchesQuery,
   sortIssues,
 } from "./queryLogic";
-import type {
-  IssueListPage,
-  IssueMeta,
-  IssueQuery,
-  IssueRepository,
-} from "./types";
+import { LIST_MAX_PAGES, type IssueMeta, type IssueQuery, type IssueRepository, type IssueStreamPage } from "./types";
 
 export class MockIssueRepository implements IssueRepository {
-  async list(query: IssueQuery): Promise<IssueListPage> {
+  async fetchPage(
+    query: IssueQuery,
+    page: number,
+    perPage: number,
+  ): Promise<IssueStreamPage> {
     if (!query.org?.trim() || !query.repo?.trim()) {
-      return {
-        items: [],
-        page: 1,
-        per_page: query.per_page ?? 20,
-        total_count: 0,
-        total_page: 0,
-      };
+      return { items: [], rawCount: 0, perPage, capped: false };
     }
     const filtered = sortIssues(
       MOCK_ISSUES.filter((issue) => matchesQuery(issue, query)),
       query.sort,
       query.direction,
     );
-    const perPage = query.per_page ?? 20;
-    const page = query.page ?? 1;
-    const total_count = filtered.length;
-    const total_page = Math.max(1, Math.ceil(total_count / perPage));
-    const safePage = Math.min(page, total_page);
-    const start = (safePage - 1) * perPage;
+    const start = (page - 1) * perPage;
+    const pageItems = filtered.slice(start, start + perPage);
     return {
-      items: filtered.slice(start, start + perPage),
-      page: safePage,
-      per_page: perPage,
-      total_count,
-      total_page,
+      items: pageItems,
+      rawCount: pageItems.length,
+      perPage,
+      capped: page >= LIST_MAX_PAGES && pageItems.length >= perPage,
     };
   }
 
-  async meta(org: string, repo: string): Promise<IssueMeta> {
-    void org;
-    void repo;
+  async meta(_org: string, _repo: string): Promise<IssueMeta> {
     return buildMetaFromIssues(MOCK_ISSUES);
   }
 }
