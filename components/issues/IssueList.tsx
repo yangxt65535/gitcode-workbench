@@ -10,11 +10,13 @@ type IssueListProps = {
   onSelect: (number: number) => void;
   loading?: boolean;
   page: number;
-  perPage: number;
-  totalPage: number | null;
-  totalCount: number | null;
+  totalPage: number;
+  totalCount: number;
+  countApprox: boolean;
+  hasMore: boolean;
+  disabled: boolean;
+  loadingMore: boolean;
   onPageChange: (page: number) => void;
-  onRefresh?: () => void;
 };
 
 export function IssueList({
@@ -23,11 +25,13 @@ export function IssueList({
   onSelect,
   loading,
   page,
-  perPage,
   totalPage,
   totalCount,
+  countApprox,
+  hasMore,
+  disabled,
+  loadingMore,
   onPageChange,
-  onRefresh,
 }: IssueListProps) {
   return (
     <PagedEntityList
@@ -35,11 +39,13 @@ export function IssueList({
       emptyHint="当前筛选条件下暂无 Issue"
       itemCount={items.length}
       page={page}
-      perPage={perPage}
       totalPage={totalPage}
       totalCount={totalCount}
+      countApprox={countApprox}
+      hasMore={hasMore}
+      disabled={disabled}
+      loadingMore={loadingMore}
       onPageChange={onPageChange}
-      onRefresh={onRefresh}
     >
       {items.map((issue) => (
         <IssueListItem

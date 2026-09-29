@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import { DashboardListItem } from "./DashboardListItem";
 import { PaneFilters } from "./PaneFilters";
+import { EntityPager } from "@/components/workbench/EntityPager";
 import { itemKey } from "@/lib/dashboard/itemKey";
 import type {
   DashboardIssue,
@@ -20,8 +20,16 @@ type DashboardPaneProps<T extends DashboardIssue> = {
   items: T[];
   loading: boolean;
   page: number;
+  /** 当前已知总页数（渐进加载中为估计值，随加载递增）。 */
   totalPage: number;
   totalCount: number;
+  /** 总数仍可能增长（渐进加载中或达到页数上限）。 */
+  countApprox: boolean;
+  /** 数据尚未加载完，允许向后试翻。 */
+  hasMore: boolean;
+  /** 请求进行中：仅禁用分页控件（筛选/确认栏保持可用）。 */
+  pagerDisabled: boolean;
+  loadingMore: boolean;
   onPageChange: (page: number) => void;
   selection: DashboardSelection | null;
   onSelect: (item: T) => void;
@@ -29,8 +37,6 @@ type DashboardPaneProps<T extends DashboardIssue> = {
   refreshingKey?: string | null;
   emptyHint: string;
   headerHint?: string | null;
-  disabled?: boolean;
-  onReload?: () => void;
 };
 
 export function DashboardPane<T extends DashboardIssue>({
@@ -44,6 +50,10 @@ export function DashboardPane<T extends DashboardIssue>({
   page,
   totalPage,
   totalCount,
+  countApprox,
+  hasMore,
+  pagerDisabled,
+  loadingMore,
   onPageChange,
   selection,
   onSelect,
@@ -51,8 +61,6 @@ export function DashboardPane<T extends DashboardIssue>({
   refreshingKey = null,
   emptyHint,
   headerHint,
-  disabled,
-  onReload,
 }: DashboardPaneProps<T>) {
   return (
     <section
@@ -66,23 +74,12 @@ export function DashboardPane<T extends DashboardIssue>({
             <span className={styles.headerHint}>{headerHint}</span>
           ) : null}
         </div>
-        {onReload ? (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={disabled || loading}
-            onClick={onReload}
-          >
-            刷新
-          </Button>
-        ) : null}
       </header>
       <PaneFilters
         side={side}
         value={filters}
         labelOptions={labelOptions}
         onChange={onFiltersChange}
-        disabled={disabled || loading}
       />
       <div className={styles.list} role="list">
         {loading ? (
@@ -113,25 +110,16 @@ export function DashboardPane<T extends DashboardIssue>({
         )}
       </div>
       <footer className={styles.footer}>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={page <= 1 || loading}
-          onClick={() => onPageChange(page - 1)}
-        >
-          上一页
-        </Button>
-        <span className={styles.pageInfo}>
-          第 {page} / {Math.max(totalPage, 1)} 页 · 共 {totalCount}
-        </span>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={page >= totalPage || loading || totalCount === 0}
-          onClick={() => onPageChange(page + 1)}
-        >
-          下一页
-        </Button>
+        <EntityPager
+          page={page}
+          totalPage={totalPage}
+          totalCount={totalCount}
+          countApprox={countApprox}
+          hasMore={hasMore}
+          disabled={pagerDisabled}
+          loadingMore={loadingMore}
+          onPageChange={onPageChange}
+        />
       </footer>
     </section>
   );

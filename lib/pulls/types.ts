@@ -51,14 +51,6 @@ export interface PullQuery {
   per_page?: number;
 }
 
-export interface PullListPage {
-  items: Pull[];
-  page: number;
-  per_page: number;
-  total_count: number | null;
-  total_page: number | null;
-}
-
 export interface PullMeta {
   states: string[];
   creators: string[];
@@ -67,7 +59,23 @@ export interface PullMeta {
   milestones: string[];
 }
 
+/** 渐进式加载的单页结果；rawCount/capped 用于终止与页数上限判定。 */
+export interface PullStreamPage {
+  items: Pull[];
+  rawCount: number;
+  perPage: number;
+  capped: boolean;
+}
+
+/** 单仓列表渐进补齐的服务器页数上限（50 页 × 20 条）。 */
+export const LIST_MAX_PAGES = 50;
+
 export interface PullRepository {
-  list(query: PullQuery): Promise<PullListPage>;
+  fetchPage(
+    query: PullQuery,
+    page: number,
+    perPage: number,
+    signal?: AbortSignal,
+  ): Promise<PullStreamPage>;
   meta(org: string, repo: string): Promise<PullMeta>;
 }
