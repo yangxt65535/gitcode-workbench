@@ -4,6 +4,8 @@ import { useEffect, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { TextInput } from "@/components/ui/TextInput";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { preferFirst } from "@/lib/shared/filterUtils";
 import type { PullMeta } from "@/lib/pulls/types";
 import styles from "@/components/workbench/Filters.module.css";
 
@@ -45,6 +47,7 @@ export function PullFilters({
   onReload,
   disabled,
 }: PullFiltersProps) {
+  const { username } = useAuth();
   const [searchDraft, setSearchDraft] = useState(value.search);
 
   useEffect(() => {
@@ -121,7 +124,7 @@ export function PullFilters({
         />
         <MultiSelect
           label="创建者"
-          options={meta?.creators ?? empty}
+          options={preferFirst(meta?.creators ?? empty, username)}
           value={value.creator}
           onChange={(creator) => patch({ creator })}
           disabled={disabled}
